@@ -1,5 +1,5 @@
 /*
- * Whack is a kernel launcher and provides tensor accessors for vectors
+ * Whack
  * Copyright (C) 2023 Adam Celarek
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,6 +16,73 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace whack {
+#include <cuda_runtime.h>
+#include <stdexcept>
 
+#include "indexing.h"
+#include "types.h"
+
+namespace whack {
+namespace detail {
+
+    template <typename Fun>
+    __global__ void lambda_caller_kernel(Fun function)
+    {
+        function(gridDim, blockDim, blockIdx, threadIdx);
+    }
+
+    inline void gpu_assert(cudaError_t code)
+    {
+        if (code != cudaSuccess) {
+            throw std::runtime_error("CUDA error: " + std::string(cudaGetErrorString(code)));
+        }
+    }
+
+    template <typename Fun>
+    void run_cuda_kernel(const dim3& gridDim, const dim3& blockDim, const Fun& function)
+    {
+        lambda_caller_kernel<<<gridDim, blockDim>>>(function);
+        gpu_assert(cudaPeekAtLastError());
+        gpu_assert(cudaDeviceSynchronize());
+    }
+
+    template <typename Fun>
+    void run_cpu_kernel(const dim3& gridDim, const dim3& blockDim, Fun function)
+    {
+        const auto n = blockDim.x * blockDim.y * blockDim.z;
+        const auto thread_count = n; // std::min(n, 64u);
+
+        //        gpe::detail::CpuSynchronisationPoint::setThreadCount(thread_count);
+
+        for (unsigned blockIdxZ = 0; blockIdxZ < gridDim.z; ++blockIdxZ) {
+            for (unsigned blockIdxY = 0; blockIdxY < gridDim.y; ++blockIdxY) {
+                for (unsigned blockIdxX = 0; blockIdxX < gridDim.x; ++blockIdxX) {
+                    const auto blockIdx = dim3 { blockIdxX, blockIdxY, blockIdxZ };
+#pragma omp parallel for num_threads(thread_count)
+                    for (int i = 0; i < n; ++i) {
+                        const auto threadIdx_arr = split_n_dim_index<unsigned, 3>({ blockDim.x, blockDim.y, blockDim.z }, i);
+                        const auto threadIdx = dim3 { threadIdx_arr[0], threadIdx_arr[1], threadIdx_arr[2] };
+                        function(gridDim, blockDim, blockIdx, threadIdx);
+                    }
+                }
+            }
+        }
+    }
+}
+
+template <typename Fun>
+void start_parallel(ComputeDevice device, const dim3& gridDim, const dim3& blockDim, const Fun& function)
+{
+    switch (device) {
+    case ComputeDevice::CUDA:
+        detail::run_cuda_kernel(gridDim, blockDim, function);
+        break;
+    case ComputeDevice::CPU:
+        detail::run_cpu_kernel(gridDim, blockDim, function);
+        break;
+    default:
+        throw std::runtime_error("start_parallel: unsupported device");
+        break;
+    }
+}
 }

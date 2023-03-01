@@ -7,9 +7,15 @@ option(WHACK_USE_LLVM_LINKER "use lld (llvm) for linking. it's parallel and much
 ########################################### sources #############################################
 set(WHACK_SOURCES
     whack/kernel.h whack/kernel.cu
+    whack/types.h
+    whack/indexing.h
+    whack/array.h
+    whack/macros.h
 )
 set(WHACK_UNITTEST_SOURCES
     unittests/main.cpp
+    unittests/kernel_starter.cu
+    unittests/indexing.cpp
 )
 
 ######################################## dependencies ###########################################
@@ -30,8 +36,9 @@ if(NOT DEFINED CMAKE_CUDA_STANDARD)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
-string(APPEND CMAKE_CUDA_FLAGS " --expt-extended-lambda --expt-relaxed-constexpr") #
-string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler '-fPIC,-fopenmp,-ffast-math,-fno-finite-math-only,-std=c++17'  --use_fast_math")
+message("CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
+string(APPEND CMAKE_CUDA_FLAGS " --expt-extended-lambda --expt-relaxed-constexpr")
+#string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler '-fPIC,-fopenmp,-ffast-math,-fno-finite-math-only,-std=c++17'  --use_fast_math")
 string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --generate-line-info -Xcompiler '-O4,-march=native' -O3")
 string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -g -G")
 
@@ -61,6 +68,8 @@ find_package(OpenMP REQUIRED)
 add_library(whack ${WHACK_SOURCES})
 target_link_libraries(whack PUBLIC OpenMP::OpenMP_CXX glm::glm)
 target_compile_definitions(whack PUBLIC GLM_FORCE_XYZW_ONLY)
+target_include_directories(whack PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(unittests ${WHACK_UNITTEST_SOURCES})
 target_link_libraries(unittests PUBLIC Catch2::Catch2 whack)
+

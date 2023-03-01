@@ -14,4 +14,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+ *****************************************************************************/
+
+#pragma once
+
+#ifdef __CUDACC__
+#define WHACK_DEVICES __host__ __device__
+#else
+#define WHACK_DEVICES
+#endif
+
+#ifdef NDEBUG
+#define WHACK_INLINE __forceinline__
+#else
+#define WHACK_INLINE
+#endif
+
+#define WHACK_DEVICES_INLINE WHACK_DEVICES WHACK_INLINE
