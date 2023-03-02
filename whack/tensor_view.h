@@ -39,7 +39,7 @@ public:
         , dimensions(dimensions)
     {
     }
-    const T& operator()(const Index& index) const
+    const typename std::remove_const_t<T>& operator()(const Index& index) const
     {
         return *(data + whack::join_n_dim_index<IndexType, n_dims, DimensionType>(dimensions, index));
     }
@@ -51,26 +51,15 @@ public:
 
 // whack::Array api
 template <typename ThrustVector, uint32_t n_dims, typename IndexType = uint32_t, typename DimensionType = IndexType>
-TensorView<const typename ThrustVector::value_type, n_dims, IndexType, DimensionType> make_tensor_view(const ThrustVector& data, const whack::Array<DimensionType, n_dims>& dimensions)
-{
-    return { thrust::raw_pointer_cast(data.data()), dimensions };
-}
-
-template <typename ThrustVector, uint32_t n_dims, typename IndexType = uint32_t, typename DimensionType = IndexType>
-TensorView<typename ThrustVector::value_type, n_dims, IndexType, DimensionType> make_tensor_view(ThrustVector& data, const whack::Array<DimensionType, n_dims>& dimensions)
+TensorView<typename std::remove_pointer_t<decltype(thrust::raw_pointer_cast(ThrustVector().data()))>, n_dims, IndexType, DimensionType>
+make_tensor_view(ThrustVector& data, const whack::Array<DimensionType, n_dims>& dimensions)
 {
     return { thrust::raw_pointer_cast(data.data()), dimensions };
 }
 
 // parameter pack api
 template <typename ThrustVector, typename IndexType = uint32_t, typename DimensionType = IndexType, typename... DimensionTypes>
-TensorView<const typename ThrustVector::value_type, sizeof...(DimensionTypes), IndexType, DimensionType> make_tensor_view(const ThrustVector& data, DimensionTypes... dimensions)
-{
-    return { thrust::raw_pointer_cast(data.data()), { dimensions... } };
-}
-
-template <typename ThrustVector, typename IndexType = uint32_t, typename DimensionType = IndexType, typename... DimensionTypes>
-TensorView<typename ThrustVector::value_type, sizeof...(DimensionTypes), IndexType, DimensionType> make_tensor_view(ThrustVector& data, DimensionTypes... dimensions)
+TensorView<typename std::remove_pointer_t<decltype(thrust::raw_pointer_cast(ThrustVector().data()))>, sizeof...(DimensionTypes), IndexType, DimensionType> make_tensor_view(ThrustVector& data, DimensionTypes... dimensions)
 {
     return { thrust::raw_pointer_cast(data.data()), { dimensions... } };
 }
