@@ -1,0 +1,46 @@
+/*
+ * Whack
+ * Copyright (C) 2023 Adam Celarek
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *****************************************************************************/
+
+#include <catch2/catch.hpp>
+
+#include <thrust/host_vector.h>
+
+#include "whack/tensor_view.h"
+
+TEST_CASE("tensor view")
+{
+    {
+        thrust::host_vector<int> tensor_data = std::vector { 42, 43 };
+        REQUIRE(tensor_data.size() == 2);
+        REQUIRE(tensor_data[0] == 42);
+        REQUIRE(tensor_data[1] == 43);
+        const auto dimensions = whack::Array<uint32_t, 1>({ 2u });
+        const auto tensor_view = whack::make_tensor_view(tensor_data, dimensions);
+
+        CHECK(tensor_view({ 0 }) == 42);
+        CHECK(tensor_view({ 1 }) == 43);
+    }
+    {
+        thrust::host_vector<int> tensor_data = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+        REQUIRE(tensor_data.size() == 12);
+        const auto dimensions = whack::Array<uint32_t, 4>({ 1u, 2u, 3u, 2u });
+        const auto tensor_view = whack::make_tensor_view(tensor_data, dimensions);
+
+        CHECK(tensor_view({ 0, 0, 0, 0 }) == 0);
+    }
+}
