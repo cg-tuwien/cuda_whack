@@ -26,29 +26,53 @@
 
 namespace whack {
 
-template <typename T, uint32_t n_dims, typename DimensionType = uint32_t, typename IndexType = DimensionType>
+template <typename T, uint32_t n_dims, typename IndexType = uint32_t, typename DimensionType = IndexType>
 class TensorView {
     using Index = whack::Array<DimensionType, n_dims>;
-    const T* data = nullptr;
+    T* data = nullptr;
     Index dimensions = {};
 
 public:
     TensorView() = default;
-    TensorView(const T* data, const Index& dimensions)
+    TensorView(T* data, const Index& dimensions)
         : data(data)
         , dimensions(dimensions)
     {
     }
-    T operator()(const Index& index) const
+    const T& operator()(const Index& index) const
+    {
+        return *(data + whack::join_n_dim_index<IndexType, n_dims, DimensionType>(dimensions, index));
+    }
+    T& operator()(const Index& index)
     {
         return *(data + whack::join_n_dim_index<IndexType, n_dims, DimensionType>(dimensions, index));
     }
 };
 
-template <typename ThrustVector, uint32_t n_dims, typename DimensionType = uint32_t, typename IndexType = DimensionType>
-TensorView<typename ThrustVector::value_type, n_dims, DimensionType, IndexType> make_tensor_view(const ThrustVector& data, const whack::Array<DimensionType, n_dims>& dimensions)
+// whack::Array api
+template <typename ThrustVector, uint32_t n_dims, typename IndexType = uint32_t, typename DimensionType = IndexType>
+TensorView<const typename ThrustVector::value_type, n_dims, IndexType, DimensionType> make_tensor_view(const ThrustVector& data, const whack::Array<DimensionType, n_dims>& dimensions)
 {
     return { thrust::raw_pointer_cast(data.data()), dimensions };
+}
+
+template <typename ThrustVector, uint32_t n_dims, typename IndexType = uint32_t, typename DimensionType = IndexType>
+TensorView<typename ThrustVector::value_type, n_dims, IndexType, DimensionType> make_tensor_view(ThrustVector& data, const whack::Array<DimensionType, n_dims>& dimensions)
+{
+    return { thrust::raw_pointer_cast(data.data()), dimensions };
+}
+
+// parameter pack api
+template <typename ThrustVector, typename IndexType = uint32_t, typename DimensionType = IndexType, typename... DimensionTypes>
+TensorView<const typename ThrustVector::value_type, sizeof...(DimensionTypes), IndexType, DimensionType> make_tensor_view(const ThrustVector& data, DimensionTypes... dimensions)
+{
+    return { thrust::raw_pointer_cast(data.data()), { dimensions... } };
+}
+
+template <typename ThrustVector, typename IndexType = uint32_t, typename DimensionType = IndexType, typename... DimensionTypes>
+TensorView<typename ThrustVector::value_type, sizeof...(DimensionTypes), IndexType, DimensionType> make_tensor_view(ThrustVector& data, DimensionTypes... dimensions)
+{
+    return { thrust::raw_pointer_cast(data.data()), { dimensions... } };
 }
 
 }
