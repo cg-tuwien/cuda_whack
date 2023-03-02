@@ -42,5 +42,11 @@ TEST_CASE("tensor view")
         const auto tensor_view = whack::make_tensor_view(tensor_data, dimensions);
 
         CHECK(tensor_view({ 0, 0, 0, 0 }) == 0);
+        CHECK(tensor_view({ 0, 0, 0, 1 }) == 1);
+        CHECK(tensor_view({ 0, 0, 1, 0 }) == 2);
+        CHECK(tensor_view({ 0, 0, 1, 1 }) == 3);
+        CHECK(tensor_view({ 0, 0, 2, 0 }) == 4);
+        CHECK(tensor_view({ 0, 1, 0, 0 }) == 6);
+        CHECK(tensor_view({ 0, 1, 2, 1 }) == 11);
     }
 }

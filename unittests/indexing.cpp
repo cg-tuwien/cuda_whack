@@ -28,14 +28,14 @@ TEMPLATE_TEST_CASE("util helpers", "[util]", int, unsigned, int64_t, uint64_t)
     {
         using whack::join_n_dim_index;
         {
-            const auto dims = whack::Array<TestType, 4> { 2, 3, 4, 5 };
+            const auto dims = whack::Array<TestType, 4> { 5, 4, 3, 2 };
             REQUIRE(join_n_dim_index<TestType>(dims, { 0, 0, 0, 0 }) == 0);
-            REQUIRE(join_n_dim_index<TestType>(dims, { 1, 0, 0, 0 }) == 1);
-            REQUIRE(join_n_dim_index<TestType>(dims, { 0, 1, 0, 0 }) == 2);
-            REQUIRE(join_n_dim_index<TestType>(dims, { 1, 1, 0, 0 }) == 3);
-            REQUIRE(join_n_dim_index<TestType>(dims, { 0, 0, 1, 0 }) == 6);
-            REQUIRE(join_n_dim_index<TestType>(dims, { 1, 1, 1, 0 }) == 9);
-            REQUIRE(join_n_dim_index<TestType>(dims, { 0, 0, 0, 1 }) == 24);
+            REQUIRE(join_n_dim_index<TestType>(dims, { 0, 0, 0, 1 }) == 1);
+            REQUIRE(join_n_dim_index<TestType>(dims, { 0, 0, 1, 0 }) == 2);
+            REQUIRE(join_n_dim_index<TestType>(dims, { 0, 0, 1, 1 }) == 3);
+            REQUIRE(join_n_dim_index<TestType>(dims, { 0, 1, 0, 0 }) == 6);
+            REQUIRE(join_n_dim_index<TestType>(dims, { 0, 1, 1, 1 }) == 9);
+            REQUIRE(join_n_dim_index<TestType>(dims, { 1, 0, 0, 0 }) == 24);
             REQUIRE(join_n_dim_index<TestType>(dims, { 1, 1, 1, 1 }) == 33);
 
             TestType idx = 0;
@@ -43,34 +43,34 @@ TEMPLATE_TEST_CASE("util helpers", "[util]", int, unsigned, int64_t, uint64_t)
                 for (TestType k = 0; k < 4; ++k) {
                     for (TestType j = 0; j < 3; ++j) {
                         for (TestType i = 0; i < 2; ++i) {
-                            const auto joined = join_n_dim_index<TestType>(dims, { i, j, k, l });
+                            const auto joined = join_n_dim_index<TestType>(dims, { l, k, j, i });
                             CHECK(joined == idx);
                             idx++;
                             const auto split = split_n_dim_index(dims, joined);
-                            REQUIRE(split[0] == i);
-                            REQUIRE(split[1] == j);
-                            REQUIRE(split[2] == k);
-                            REQUIRE(split[3] == l);
+                            CHECK(split[0] == l);
+                            CHECK(split[1] == k);
+                            CHECK(split[2] == j);
+                            CHECK(split[3] == i);
                         }
                     }
                 }
             }
         }
         {
-            const auto dims = whack::Array<TestType, 3> { (1 << 17), (1 << 12), (1 << 4) };
+            const auto dims = whack::Array<TestType, 3> { (1 << 4), (1 << 12), (1 << 17) };
             REQUIRE(join_n_dim_index<uint64_t>(dims, { 0, 0, 0 }) == 0);
-            REQUIRE(join_n_dim_index<uint64_t>(dims, { 1, 0, 0 }) == 1);
+            REQUIRE(join_n_dim_index<uint64_t>(dims, { 0, 0, 1 }) == 1);
             REQUIRE(join_n_dim_index<uint64_t>(dims, { 0, 1, 0 }) == (1 << 17));
-            REQUIRE(join_n_dim_index<uint64_t>(dims, { 0, 0, 1 }) == (1 << 17) * (1 << 12));
+            REQUIRE(join_n_dim_index<uint64_t>(dims, { 1, 0, 0 }) == (1 << 17) * (1 << 12));
             {
                 for (TestType i = 0; i < 2; ++i) {
                     for (TestType j = 0; j < 3; ++j) {
                         for (TestType k = 0; k < 4; ++k) {
-                            const auto joined = join_n_dim_index<uint64_t>(dims, { i, j, k });
+                            const auto joined = join_n_dim_index<uint64_t>(dims, { k, j, i });
                             const auto split = split_n_dim_index(dims, joined);
-                            REQUIRE(split[0] == i);
+                            REQUIRE(split[0] == k);
                             REQUIRE(split[1] == j);
-                            REQUIRE(split[2] == k);
+                            REQUIRE(split[2] == i);
                         }
                     }
                 }

@@ -28,12 +28,12 @@ WHACK_DEVICES_INLINE
     split_n_dim_index(const Array<small_type, n_dims>& dimensions, large_type idx)
 {
     Array<small_type, n_dims> tmp;
-    tmp.front() = 1;
-    for (unsigned i = 1; i < n_dims; ++i) {
-        tmp[i] = dimensions[i - 1] * tmp[i - 1];
+    tmp.back() = 1;
+    for (unsigned i = n_dims - 2; i < n_dims; --i) {
+        tmp[i] = dimensions[i + 1] * tmp[i + 1];
     }
 
-    for (unsigned i = n_dims - 1; i < n_dims; --i) {
+    for (unsigned i = 0; i < n_dims; ++i) {
         const auto tmp_idx = idx / tmp[i];
         idx -= tmp_idx * tmp[i];
         tmp[i] = tmp_idx;
@@ -48,7 +48,7 @@ WHACK_DEVICES_INLINE
 {
     large_type joined_idx = 0;
     large_type cum_dims = 1;
-    for (unsigned i = 0; i < n_dims; ++i) {
+    for (unsigned i = n_dims - 1; i < n_dims; --i) {
         joined_idx += idx[i] * cum_dims;
         cum_dims *= dimensions[i];
     }
