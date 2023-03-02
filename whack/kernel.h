@@ -25,6 +25,7 @@
 namespace whack {
 namespace detail {
 
+#ifdef __CUDACC__
     template <typename Fun>
     __global__ void lambda_caller_kernel(Fun function)
     {
@@ -45,6 +46,7 @@ namespace detail {
         gpu_assert(cudaPeekAtLastError());
         gpu_assert(cudaDeviceSynchronize());
     }
+#endif
 
     template <typename Fun>
     void run_cpu_kernel(const dim3& gridDim, const dim3& blockDim, Fun function)
@@ -74,9 +76,11 @@ template <typename Fun>
 void start_parallel(ComputeDevice device, const dim3& gridDim, const dim3& blockDim, const Fun& function)
 {
     switch (device) {
+#ifdef __CUDACC__
     case ComputeDevice::CUDA:
         detail::run_cuda_kernel(gridDim, blockDim, function);
         break;
+#endif
     case ComputeDevice::CPU:
         detail::run_cpu_kernel(gridDim, blockDim, function);
         break;

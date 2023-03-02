@@ -33,7 +33,7 @@ TEST_CASE("kernel_starter: start cuda kernel")
         whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3&) {});
     }
 
-    SECTION("start thrust like on cuda")
+    SECTION("start on cuda")
     {
         thrust::device_vector<int> v(16);
         int* v_ptr = thrust::raw_pointer_cast(v.data());
@@ -52,7 +52,7 @@ TEST_CASE("kernel_starter: start cuda kernel")
         }
     }
 
-    SECTION("start thrust like on cpu")
+    SECTION("start on cpu")
     {
         thrust::host_vector<int> v(16);
         int* v_ptr = thrust::raw_pointer_cast(v.data());

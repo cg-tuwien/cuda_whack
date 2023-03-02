@@ -15,6 +15,7 @@ set(WHACK_SOURCES
 set(WHACK_UNITTEST_SOURCES
     unittests/main.cpp
     unittests/kernel_starter.cu
+    unittests/cpu_only_kernel_starter.cpp
     unittests/indexing.cpp
 )
 
