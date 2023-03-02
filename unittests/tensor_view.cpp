@@ -72,6 +72,17 @@ TEST_CASE("tensor view")
         CHECK(tensor_view({ 1 }) == 3);
     }
 
+    SECTION("const tensor views to a writable vectors are actually const")
+    {
+        thrust::host_vector<int> tensor_data = std::vector { 42, 43 };
+        REQUIRE(tensor_data.size() == 2);
+        REQUIRE(tensor_data[0] == 42);
+        REQUIRE(tensor_data[1] == 43);
+        const auto dimensions = whack::Array<uint32_t, 1>({ 2u });
+        const auto tensor_view = whack::make_tensor_view(tensor_data, dimensions);
+        static_assert(std::is_const_v<std::remove_reference_t<decltype(tensor_view({ 0 }))>>);
+    }
+
     SECTION("read struct")
     {
         struct Foo {
