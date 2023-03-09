@@ -74,5 +74,5 @@ target_compile_definitions(whack PUBLIC GLM_FORCE_XYZW_ONLY)
 target_include_directories(whack PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(unittests ${WHACK_UNITTEST_SOURCES})
-target_link_libraries(unittests PUBLIC Catch2::Catch2 whack)
+target_link_libraries(unittests PUBLIC Catch2::Catch2WithMain whack)
 
