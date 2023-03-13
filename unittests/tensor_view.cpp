@@ -117,11 +117,12 @@ TEST_CASE("tensor view")
         CHECK(tensor_view({ 0 }) == 42);
         CHECK(tensor_view({ 1 }) == 43);
     }
-    SECTION("parametre pack api for dimensions (multiple dims read)")
+    SECTION("parametre pack api for dimensions (multiple dims read / write)")
     {
-        const thrust::host_vector<int> tensor_data = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+        thrust::host_vector<int> tensor_data = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
         REQUIRE(tensor_data.size() == 12);
         const auto tensor_view = whack::make_tensor_view(tensor_data, 1u, 2u, 3u, 2u);
+        auto tensor_writer_view = whack::make_tensor_view(tensor_data, 1u, 2u, 3u, 2u);
 
         CHECK(tensor_view({ 0, 0, 0, 0 }) == 0);
         CHECK(tensor_view({ 0, 0, 0, 1 }) == 1);
@@ -130,6 +131,22 @@ TEST_CASE("tensor view")
         CHECK(tensor_view({ 0, 0, 2, 0 }) == 4);
         CHECK(tensor_view({ 0, 1, 0, 0 }) == 6);
         CHECK(tensor_view({ 0, 1, 2, 1 }) == 11);
+
+        tensor_writer_view({ 0, 0, 0, 0 }) = 10;
+        tensor_writer_view({ 0, 0, 0, 1 }) = 11;
+        tensor_writer_view({ 0, 0, 1, 0 }) = 12;
+        tensor_writer_view({ 0, 0, 1, 1 }) = 13;
+        tensor_writer_view({ 0, 0, 2, 0 }) = 14;
+        tensor_writer_view({ 0, 1, 0, 0 }) = 16;
+        tensor_writer_view({ 0, 1, 2, 1 }) = 111;
+
+        CHECK(tensor_writer_view({ 0, 0, 0, 0 }) == 10);
+        CHECK(tensor_writer_view({ 0, 0, 0, 1 }) == 11);
+        CHECK(tensor_writer_view({ 0, 0, 1, 0 }) == 12);
+        CHECK(tensor_writer_view({ 0, 0, 1, 1 }) == 13);
+        CHECK(tensor_writer_view({ 0, 0, 2, 0 }) == 14);
+        CHECK(tensor_writer_view({ 0, 1, 0, 0 }) == 16);
+        CHECK(tensor_writer_view({ 0, 1, 2, 1 }) == 111);
     }
 
     SECTION("parametre pack api for dimensions (single dim write)")
@@ -174,11 +191,12 @@ TEST_CASE("tensor view")
         CHECK(tensor_view(1) == 3);
     }
 
-    SECTION("parametre pack api for indices (multiple dims read)")
+    SECTION("parametre pack api for indices (multiple dims read / write)")
     {
-        const thrust::host_vector<int> tensor_data = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+        thrust::host_vector<int> tensor_data = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
         REQUIRE(tensor_data.size() == 12);
         const auto tensor_view = whack::make_tensor_view(tensor_data, 1u, 2u, 3u, 2u);
+        auto tensor_writer_view = whack::make_tensor_view(tensor_data, 1u, 2u, 3u, 2u);
 
         CHECK(tensor_view(0u, 0u, 0u, 0u) == 0);
         CHECK(tensor_view(0u, 0u, 0u, 1u) == 1);
@@ -187,5 +205,21 @@ TEST_CASE("tensor view")
         CHECK(tensor_view(0u, 0u, 2u, 0u) == 4);
         CHECK(tensor_view(0u, 1u, 0u, 0u) == 6);
         CHECK(tensor_view(0u, 1u, 2u, 1u) == 11);
+
+        tensor_writer_view(0u, 0u, 0u, 0u) = 10;
+        tensor_writer_view(0u, 0u, 0u, 1u) = 11;
+        tensor_writer_view(0u, 0u, 1u, 0u) = 12;
+        tensor_writer_view(0u, 0u, 1u, 1u) = 13;
+        tensor_writer_view(0u, 0u, 2u, 0u) = 14;
+        tensor_writer_view(0u, 1u, 0u, 0u) = 16;
+        tensor_writer_view(0u, 1u, 2u, 1u) = 111;
+
+        CHECK(tensor_writer_view(0u, 0u, 0u, 0u) == 10);
+        CHECK(tensor_writer_view(0u, 0u, 0u, 1u) == 11);
+        CHECK(tensor_writer_view(0u, 0u, 1u, 0u) == 12);
+        CHECK(tensor_writer_view(0u, 0u, 1u, 1u) == 13);
+        CHECK(tensor_writer_view(0u, 0u, 2u, 0u) == 14);
+        CHECK(tensor_writer_view(0u, 1u, 0u, 0u) == 16);
+        CHECK(tensor_writer_view(0u, 1u, 2u, 1u) == 111);
     }
 }

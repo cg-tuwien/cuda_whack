@@ -19,6 +19,7 @@ set(WHACK_UNITTEST_SOURCES
     unittests/cpu_only_kernel_starter.cpp
     unittests/indexing.cpp
     unittests/tensor_view.cpp
+    unittests/tensor_view.cu
 )
 
 ######################################## dependencies ###########################################

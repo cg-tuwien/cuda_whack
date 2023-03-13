@@ -23,6 +23,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 
 #include "indexing.h"
+#include "macros.h"
 
 namespace whack {
 
@@ -33,7 +34,10 @@ class TensorView {
     Index dimensions = {};
 
 public:
+    WHACK_DEVICES_INLINE
     TensorView() = default;
+
+    WHACK_DEVICES_INLINE
     TensorView(T* data, const Index& dimensions)
         : data(data)
         , dimensions(dimensions)
@@ -41,35 +45,43 @@ public:
     }
     //    const typename std::remove_const_t<T>& operator()(const Index& index) const
     template <typename U = T>
-    typename std::enable_if<(n_dims > 1), const U&>::type operator()(const Index& index) const
+    WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), const U&>::type operator()(const Index& index) const
     {
+        for (unsigned i = 0; i < n_dims; ++i)
+            assert(index[i] < dimensions[i]);
         return *(data + whack::join_n_dim_index<IndexType, n_dims, DimensionType>(dimensions, index));
     }
 
     template <typename U = T>
-    typename std::enable_if<(n_dims > 1), U&>::type operator()(const Index& index)
+    WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), U&>::type operator()(const Index& index)
     {
+        for (unsigned i = 0; i < n_dims; ++i)
+            assert(index[i] < dimensions[i]);
         return *(data + whack::join_n_dim_index<IndexType, n_dims, DimensionType>(dimensions, index));
     }
 
+    WHACK_DEVICES_INLINE
     const T& operator()(const IndexType& index) const
     {
+        assert(index < dimensions[0]);
         return *(data + index);
     }
 
+    WHACK_DEVICES_INLINE
     T& operator()(const IndexType& index)
     {
+        assert(index < dimensions[0]);
         return *(data + index);
     }
 
     template <typename... IndexTypes>
-    const T& operator()(const IndexType& index0, const IndexTypes&... other_indices) const
+    WHACK_DEVICES_INLINE const T& operator()(const IndexType& index0, const IndexTypes&... other_indices) const
     {
         return operator()({ index0, other_indices... });
     }
 
     template <typename... IndexTypes>
-    T& operator()(const IndexType& index0, const IndexTypes&... other_indices)
+    WHACK_DEVICES_INLINE T& operator()(const IndexType& index0, const IndexTypes&... other_indices)
     {
         return operator()({ index0, other_indices... });
     }
@@ -80,6 +92,12 @@ template <typename ThrustVector, uint32_t n_dims, typename IndexType = uint32_t,
 TensorView<typename std::remove_pointer_t<decltype(thrust::raw_pointer_cast(ThrustVector().data()))>, n_dims, IndexType, DimensionType>
 make_tensor_view(ThrustVector& data, const whack::Array<DimensionType, n_dims>& dimensions)
 {
+#ifndef NDEBUG
+    IndexType dimension_size = 1;
+    for (unsigned i = 0; i < n_dims; ++i)
+        dimension_size *= dimensions[i];
+    assert(dimension_size == data.size());
+#endif
     return { thrust::raw_pointer_cast(data.data()), dimensions };
 }
 
@@ -87,6 +105,7 @@ make_tensor_view(ThrustVector& data, const whack::Array<DimensionType, n_dims>& 
 template <typename ThrustVector, typename IndexType = uint32_t, typename DimensionType = IndexType, typename... DimensionTypes>
 TensorView<typename std::remove_pointer_t<decltype(thrust::raw_pointer_cast(ThrustVector().data()))>, sizeof...(DimensionTypes), IndexType, DimensionType> make_tensor_view(ThrustVector& data, DimensionTypes... dimensions)
 {
+    assert((dimensions * ...) == data.size());
     return { thrust::raw_pointer_cast(data.data()), { dimensions... } };
 }
 
