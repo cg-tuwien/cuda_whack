@@ -105,7 +105,7 @@ TEST_CASE("tensor view")
         CHECK(tensor_view({ 1 }).b == 4);
     }
 
-    SECTION("whack::Array free api for dimensions (single dim read)")
+    SECTION("parametre pack api for dimensions (single dim read)")
     {
         const thrust::host_vector<int> tensor_data = std::vector { 42, 43 };
         REQUIRE(tensor_data.size() == 2);
@@ -117,7 +117,7 @@ TEST_CASE("tensor view")
         CHECK(tensor_view({ 0 }) == 42);
         CHECK(tensor_view({ 1 }) == 43);
     }
-    SECTION("whack::Array free api for dimensions (multiple dims read)")
+    SECTION("parametre pack api for dimensions (multiple dims read)")
     {
         const thrust::host_vector<int> tensor_data = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
         REQUIRE(tensor_data.size() == 12);
@@ -132,7 +132,7 @@ TEST_CASE("tensor view")
         CHECK(tensor_view({ 0, 1, 2, 1 }) == 11);
     }
 
-    SECTION("whack::Array free api for dimensions (single dim write)")
+    SECTION("parametre pack api for dimensions (single dim write)")
     {
         thrust::host_vector<int> tensor_data = std::vector { 42, 43 };
         REQUIRE(tensor_data.size() == 2);
@@ -148,5 +148,44 @@ TEST_CASE("tensor view")
 
         CHECK(tensor_view({ 0 }) == 2);
         CHECK(tensor_view({ 1 }) == 3);
+    }
+
+    SECTION("parametre pack api for indices (single dim read)")
+    {
+        const thrust::host_vector<int> tensor_data = std::vector { 42, 43 };
+        const auto tensor_view = whack::make_tensor_view(tensor_data, 2u);
+
+        static_assert(std::is_const_v<std::remove_reference_t<decltype(tensor_view(0))>>);
+        CHECK(tensor_view(0) == 42);
+        CHECK(tensor_view(1) == 43);
+    }
+
+    SECTION("parametre pack api for indices (single dim write)")
+    {
+        thrust::host_vector<int> tensor_data = std::vector { 42, 43 };
+        auto tensor_view = whack::make_tensor_view(tensor_data, 2u);
+        CHECK(tensor_view(0) == 42);
+        CHECK(tensor_view(1) == 43);
+
+        tensor_view(0) = 2;
+        tensor_view(1) = 3;
+
+        CHECK(tensor_view(0) == 2);
+        CHECK(tensor_view(1) == 3);
+    }
+
+    SECTION("parametre pack api for indices (multiple dims read)")
+    {
+        const thrust::host_vector<int> tensor_data = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+        REQUIRE(tensor_data.size() == 12);
+        const auto tensor_view = whack::make_tensor_view(tensor_data, 1u, 2u, 3u, 2u);
+
+        CHECK(tensor_view(0u, 0u, 0u, 0u) == 0);
+        CHECK(tensor_view(0u, 0u, 0u, 1u) == 1);
+        CHECK(tensor_view(0u, 0u, 1u, 0u) == 2);
+        CHECK(tensor_view(0u, 0u, 1u, 1u) == 3);
+        CHECK(tensor_view(0u, 0u, 2u, 0u) == 4);
+        CHECK(tensor_view(0u, 1u, 0u, 0u) == 6);
+        CHECK(tensor_view(0u, 1u, 2u, 1u) == 11);
     }
 }

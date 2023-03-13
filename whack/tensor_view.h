@@ -39,13 +39,39 @@ public:
         , dimensions(dimensions)
     {
     }
-    const typename std::remove_const_t<T>& operator()(const Index& index) const
+    //    const typename std::remove_const_t<T>& operator()(const Index& index) const
+    template <typename U = T>
+    typename std::enable_if<(n_dims > 1), const U&>::type operator()(const Index& index) const
     {
         return *(data + whack::join_n_dim_index<IndexType, n_dims, DimensionType>(dimensions, index));
     }
-    T& operator()(const Index& index)
+
+    template <typename U = T>
+    typename std::enable_if<(n_dims > 1), U&>::type operator()(const Index& index)
     {
         return *(data + whack::join_n_dim_index<IndexType, n_dims, DimensionType>(dimensions, index));
+    }
+
+    const T& operator()(const IndexType& index) const
+    {
+        return *(data + index);
+    }
+
+    T& operator()(const IndexType& index)
+    {
+        return *(data + index);
+    }
+
+    template <typename... IndexTypes>
+    const T& operator()(const IndexType& index0, const IndexTypes&... other_indices) const
+    {
+        return operator()({ index0, other_indices... });
+    }
+
+    template <typename... IndexTypes>
+    T& operator()(const IndexType& index0, const IndexTypes&... other_indices)
+    {
+        return operator()({ index0, other_indices... });
     }
 };
 
