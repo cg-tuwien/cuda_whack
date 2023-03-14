@@ -13,17 +13,20 @@ set(WHACK_SOURCES
     whack/array.h
     whack/macros.h
     whack/tensor_view.h
+    whack/RandomNumberGenerator.h
 )
 set(WHACK_UNITTEST_SOURCES
     unittests/main.cpp
     unittests/cpu_only_kernel_starter.cpp
     unittests/indexing.cpp
     unittests/tensor_view.cpp
+    unittests/random_number_generator.cpp
 )
 
 set(WHACK_UNITTEST_SOURCES_CUDA
     unittests/kernel_starter.cu
     unittests/tensor_view.cu
+    unittests/random_number_generator.cu
 )
 
 ######################################## dependencies ###########################################
@@ -51,7 +54,7 @@ string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -g -G")
 
 if(NOT MSVC)
     #string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler '-fPIC,-fopenmp,-ffast-math,-fno-finite-math-only,-std=c++17'  --use_fast_math")
-    string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --generate-line-info -Xcompiler '-O4,-march=native' -O3") 
+    string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --generate-line-info -Xcompiler '-O4,-march=native' -O3")
 
     # gcc 10 is buggy (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100102)
     #string(APPEND CMAKE_CUDA_FLAGS " -ccbin /usr/bin/g++-9")
@@ -81,7 +84,7 @@ endif()
 ########################################## projects ##############################################
 add_library(whack ${WHACK_SOURCES})
 target_link_libraries(whack PUBLIC OpenMP::OpenMP_CXX glm::glm)
-target_compile_definitions(whack PUBLIC GLM_FORCE_XYZW_ONLY)
+target_compile_definitions(whack PUBLIC GLM_FORCE_XYZW_ONLY GLM_FORCE_INLINE)
 target_include_directories(whack PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (CMAKE_CUDA_COMPILER AND WHACK_BUILD_UNITTESTS_FOR_CUDA)
