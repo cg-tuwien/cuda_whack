@@ -18,17 +18,59 @@
 
 #pragma once
 #include <any>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
 #include "TensorView.h"
 #include "enums.h"
 
 namespace whack {
 
-template <typename T, uint32_t n_dims, typename IndexType = uint32_t, typename DimensionType = IndexType>
+template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 struct Tensor {
     std::any memory;
-    TensorView<T, n_dims, IndexType, DimensionType> view;
-    ComputeDevice device = ComputeDevice::Invalid;
+    TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view;
+    ComputeDevice m_device = ComputeDevice::Invalid;
+
+    ComputeDevice device() const { return m_device; }
 };
+
+template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
+Tensor<T, sizeof...(DimensionTypes)> make_host_tensor(DimensionTypes... dim)
+{
+    static_assert(std::is_integral_v<IndexStoreType>);
+    static_assert(std::is_integral_v<IndexCalculateType>);
+    static_assert(std::is_unsigned_v<IndexStoreType>);
+    static_assert(std::is_unsigned_v<IndexCalculateType>);
+    static_assert(std::is_move_assignable_v<thrust::host_vector<T>>, "thrust::host_vector<T> must be movable");
+
+    constexpr auto n_dims = sizeof...(DimensionTypes);
+    const IndexCalculateType size = (std::make_unsigned_t<IndexCalculateType>(dim) * ...);
+    thrust::host_vector<T> memory(size);
+    Tensor<T, n_dims> retval;
+    retval.view = whack::make_tensor_view(memory, dim...);
+    retval.memory = std::move(memory);
+    retval.m_device = whack::ComputeDevice::CPU;
+    return retval;
+}
+
+template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
+Tensor<T, sizeof...(DimensionTypes)> make_device_tensor(DimensionTypes... dim)
+{
+    static_assert(std::is_integral_v<IndexStoreType>);
+    static_assert(std::is_integral_v<IndexCalculateType>);
+    static_assert(std::is_unsigned_v<IndexStoreType>);
+    static_assert(std::is_unsigned_v<IndexCalculateType>);
+    static_assert(std::is_move_assignable_v<thrust::host_vector<T>>, "thrust::host_vector<T> must be movable");
+
+    constexpr auto n_dims = sizeof...(DimensionTypes);
+    const IndexCalculateType size = (std::make_unsigned_t<IndexCalculateType>(dim) * ...);
+    thrust::device_vector<T> memory(size);
+    Tensor<T, n_dims> retval;
+    retval.view = whack::make_tensor_view(memory, dim...);
+    retval.memory = std::move(memory);
+    retval.m_device = whack::ComputeDevice::CUDA;
+    return retval;
+}
 
 }
