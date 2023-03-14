@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(cuda_whack LANGUAGES CUDA CXX)
 
-option(WHACK_BUILD_UNITTESTS "include unit test targets in the buildsystem" ON)
-option(WHACK_BUILD_UNITTESTS_FOR_CUDA "include unit tests for the cuda side" ON)
+option(WHACK_BUILD_UNITTESTS "include unit test targets in the buildsystem" OFF)
+option(WHACK_BUILD_UNITTESTS_FOR_CUDA "include unit tests for the cuda side" OFF)
 option(WHACK_USE_LLVM_LINKER "use lld (llvm) for linking. it's parallel and much faster, but not installed by default. if it's not installed, you'll get errors, that openmp or other stuff is not installed (hard to track down)" OFF)
 
 ########################################### sources #############################################
