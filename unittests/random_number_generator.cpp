@@ -1,7 +1,7 @@
 
 
 #include "whack/RandomNumberGenerator.h"
-#include "whack/types.h"
+#include "whack/Tensor.h"
 
 whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed(bool cuda);
 

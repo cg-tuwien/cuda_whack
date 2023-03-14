@@ -8,12 +8,13 @@ option(WHACK_USE_LLVM_LINKER "use lld (llvm) for linking. it's parallel and much
 ########################################### sources #############################################
 set(WHACK_SOURCES
     whack/kernel.h whack/kernel.cpp
-    whack/types.h
     whack/indexing.h
     whack/array.h
     whack/macros.h
-    whack/tensor_view.h
+    whack/TensorView.h
     whack/RandomNumberGenerator.h
+    whack/Tensor.h
+    whack/enums.h
 )
 set(WHACK_UNITTEST_SOURCES
     unittests/main.cpp
@@ -27,6 +28,7 @@ set(WHACK_UNITTEST_SOURCES_CUDA
     unittests/kernel_starter.cu
     unittests/tensor_view.cu
     unittests/random_number_generator.cu
+    unittests/Tensor.cu
 )
 
 ######################################## dependencies ###########################################

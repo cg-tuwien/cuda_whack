@@ -23,8 +23,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include "whack/TensorView.h"
 #include "whack/kernel.h"
-#include "whack/tensor_view.h"
 
 void tensor_view_cuda_read_write_multi_dim_cuda()
 {

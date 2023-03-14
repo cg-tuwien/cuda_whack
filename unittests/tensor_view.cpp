@@ -20,7 +20,7 @@
 
 #include <thrust/host_vector.h>
 
-#include "whack/tensor_view.h"
+#include "whack/TensorView.h"
 
 TEST_CASE("tensor view")
 {

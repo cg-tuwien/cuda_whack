@@ -19,8 +19,8 @@
 #include <cuda_runtime.h>
 #include <stdexcept>
 
+#include "enums.h"
 #include "indexing.h"
-#include "types.h"
 
 namespace whack {
 namespace detail {

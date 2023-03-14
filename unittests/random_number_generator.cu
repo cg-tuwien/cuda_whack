@@ -7,8 +7,8 @@
 #include <thrust/host_vector.h>
 
 #include "whack/RandomNumberGenerator.h"
+#include "whack/Tensor.h"
 #include "whack/kernel.h"
-#include "whack/types.h"
 
 TEST_CASE("random_number_generator single threaded")
 {

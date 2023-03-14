@@ -14,24 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+ *****************************************************************************/
 
 #pragma once
-#include <any>
-
-#include "tensor_view.h"
 
 namespace whack {
 enum class ComputeDevice {
     CPU,
     CUDA,
     Invalid
-};
-
-template <typename T, uint32_t n_dims, typename IndexType = uint32_t, typename DimensionType = IndexType>
-struct Tensor {
-    std::any memory;
-    TensorView<T, n_dims, IndexType, DimensionType> view;
-    ComputeDevice device = ComputeDevice::Invalid;
 };
 }
