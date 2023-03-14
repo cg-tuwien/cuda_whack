@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.18)
 project(cuda_whack LANGUAGES CUDA CXX)
 
 option(WHACK_BUILD_UNITTESTS "include unit test targets in the buildsystem" ON)
+option(WHACK_BUILD_UNITTESTS_FOR_CUDA "include unit tests for the cuda side" ON)
 option(WHACK_USE_LLVM_LINKER "use lld (llvm) for linking. it's parallel and much faster, but not installed by default. if it's not installed, you'll get errors, that openmp or other stuff is not installed (hard to track down)" OFF)
 
 ########################################### sources #############################################
 set(WHACK_SOURCES
-    whack/kernel.h whack/kernel.cu
+    whack/kernel.h whack/kernel.cpp
     whack/types.h
     whack/indexing.h
     whack/array.h
@@ -15,17 +16,22 @@ set(WHACK_SOURCES
 )
 set(WHACK_UNITTEST_SOURCES
     unittests/main.cpp
-    unittests/kernel_starter.cu
     unittests/cpu_only_kernel_starter.cpp
     unittests/indexing.cpp
     unittests/tensor_view.cpp
+)
+
+set(WHACK_UNITTEST_SOURCES_CUDA
+    unittests/kernel_starter.cu
     unittests/tensor_view.cu
 )
 
 ######################################## dependencies ###########################################
 include(FetchContent)
-FetchContent_Declare(glm GIT_REPOSITORY https://github.com/g-truc/glm.git)
-FetchContent_MakeAvailable(glm)
+if(NOT TARGET glm::glm)
+    FetchContent_Declare(glm GIT_REPOSITORY https://github.com/g-truc/glm.git)
+    FetchContent_MakeAvailable(glm)
+endif()
 if(WHACK_BUILD_UNITTESTS OR BUILD_TESTING)
     FetchContent_Declare(catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git GIT_TAG v3.3.2)
     FetchContent_MakeAvailable(catch2)
@@ -40,7 +46,6 @@ if(NOT DEFINED CMAKE_CUDA_STANDARD)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
-message("CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
 string(APPEND CMAKE_CUDA_FLAGS " --expt-extended-lambda --expt-relaxed-constexpr")
 string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -g -G")
 
@@ -60,7 +65,9 @@ if (WHACK_USE_LLVM_LINKER)
 endif()
 
 find_package(OpenMP REQUIRED)
-
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+endif()
 
 #set(MY_INCLUDE_PATHS
     #${MY_ANACONDA_PATH}/include/python3.9/
@@ -77,6 +84,10 @@ target_link_libraries(whack PUBLIC OpenMP::OpenMP_CXX glm::glm)
 target_compile_definitions(whack PUBLIC GLM_FORCE_XYZW_ONLY)
 target_include_directories(whack PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(unittests ${WHACK_UNITTEST_SOURCES})
+if (CMAKE_CUDA_COMPILER AND WHACK_BUILD_UNITTESTS_FOR_CUDA)
+    add_executable(unittests ${WHACK_UNITTEST_SOURCES} ${WHACK_UNITTEST_SOURCES_CUDA})
+else()
+    add_executable(unittests ${WHACK_UNITTEST_SOURCES})
+endif()
 target_link_libraries(unittests PUBLIC Catch2::Catch2WithMain whack)
 
