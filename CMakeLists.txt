@@ -28,8 +28,10 @@ set(WHACK_UNITTEST_SOURCES_CUDA
 
 ######################################## dependencies ###########################################
 include(FetchContent)
-FetchContent_Declare(glm GIT_REPOSITORY https://github.com/g-truc/glm.git)
-FetchContent_MakeAvailable(glm)
+if(NOT TARGET glm::glm)
+    FetchContent_Declare(glm GIT_REPOSITORY https://github.com/g-truc/glm.git)
+    FetchContent_MakeAvailable(glm)
+endif()
 if(WHACK_BUILD_UNITTESTS OR BUILD_TESTING)
     FetchContent_Declare(catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git GIT_TAG v3.3.2)
     FetchContent_MakeAvailable(catch2)
@@ -60,7 +62,9 @@ if (WHACK_USE_LLVM_LINKER)
 endif()
 
 find_package(OpenMP REQUIRED)
-
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+endif()
 
 #set(MY_INCLUDE_PATHS
     #${MY_ANACONDA_PATH}/include/python3.9/
