@@ -42,15 +42,18 @@ endif()
 
 message("CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
 string(APPEND CMAKE_CUDA_FLAGS " --expt-extended-lambda --expt-relaxed-constexpr")
-#string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler '-fPIC,-fopenmp,-ffast-math,-fno-finite-math-only,-std=c++17'  --use_fast_math")
-string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --generate-line-info -Xcompiler '-O4,-march=native' -O3")
 string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -g -G")
 
-# gcc 10 is buggy (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100102)
-#string(APPEND CMAKE_CUDA_FLAGS " -ccbin /usr/bin/g++-9")
+if(NOT MSVC)
+    #string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler '-fPIC,-fopenmp,-ffast-math,-fno-finite-math-only,-std=c++17'  --use_fast_math")
+    string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --generate-line-info -Xcompiler '-O4,-march=native' -O3") 
 
-string(APPEND CMAKE_CXX_FLAGS " -ffast-math -fno-finite-math-only")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O4 -march=native")
+    # gcc 10 is buggy (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100102)
+    #string(APPEND CMAKE_CUDA_FLAGS " -ccbin /usr/bin/g++-9")
+
+    string(APPEND CMAKE_CXX_FLAGS " -ffast-math -fno-finite-math-only")
+    string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O4 -march=native")
+endif()
 
 if (WHACK_USE_LLVM_LINKER)
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -fuse-ld=lld")

@@ -34,7 +34,6 @@ class TensorView {
     Index dimensions = {};
 
 public:
-    WHACK_DEVICES_INLINE
     TensorView() = default;
 
     WHACK_DEVICES_INLINE
