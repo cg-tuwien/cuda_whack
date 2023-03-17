@@ -70,7 +70,7 @@ void tensor_view_cuda_read_write_multi_dim_cpu()
     }
 }
 
-TEST_CASE("tensor view (cuda)")
+TEST_CASE("tensor_view.cu")
 {
     SECTION("read/write multi dim cuda")
     {

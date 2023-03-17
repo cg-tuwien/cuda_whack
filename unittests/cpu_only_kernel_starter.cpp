@@ -22,7 +22,7 @@
 
 #include "whack/kernel.h"
 
-TEST_CASE("kernel_starter: start cpu only kernel")
+TEST_CASE("cpu_only_kernel_starter.cpp")
 {
     thrust::host_vector<int> v(16);
     int* v_ptr = thrust::raw_pointer_cast(v.data());

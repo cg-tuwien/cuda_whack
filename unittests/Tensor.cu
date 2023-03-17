@@ -87,7 +87,7 @@ void Tensor_interface()
 
         dim3 dimBlock = dim3(1, 1, 1);
         dim3 dimGrid = dim3(1, 1, 1);
-        whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [=] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3&) mutable {
+        whack::start_parallel(tensor.device(), dimGrid, dimBlock, [=] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3&) mutable {
             view(1, 2, 3) = 42;
         });
         CHECK(tensor.device_vector().size() == 2 * 3 * 4);
@@ -153,37 +153,40 @@ void Tensor_copy_to_device_and_back()
     CHECK(h3.host_vector()[1] == 68543);
 }
 
+namespace {
+    
 class FailOnCopy {
     int v = 0;
 
-public:
-    FailOnCopy() = default;
-    FailOnCopy(const FailOnCopy& other)
-        : v(other.v)
-    {
-        CHECK(false);
-    }
-    FailOnCopy(FailOnCopy&& other) noexcept
-        : v(other.v)
-    {
-        CHECK(true);
-    }
-    FailOnCopy& operator=(const FailOnCopy& other)
-    {
-        v = other.v;
-        CHECK(false);
-        return *this;
-    }
-    FailOnCopy& operator=(FailOnCopy&& other) noexcept
-    {
-        v = other.v;
-        CHECK(true);
-        return *this;
-    }
-    ~FailOnCopy() = default;
+    public:
+        FailOnCopy() = default;
+        FailOnCopy(const FailOnCopy& other)
+            : v(other.v)
+        {
+            assert(false);
+        }
+        FailOnCopy(FailOnCopy&& other) noexcept
+            : v(other.v)
+        {
+            assert(true);
+        }
+        FailOnCopy& operator=(const FailOnCopy& other)
+        {
+            v = other.v;
+            assert(false);
+            return *this;
+        }
+        FailOnCopy& operator=(FailOnCopy&& other) noexcept
+        {
+            v = other.v;
+            assert(true);
+            return *this;
+        }
+        ~FailOnCopy() = default;
 };
+}
 
-TEST_CASE("Tensor")
+TEST_CASE("Tensor.cu")
 {
     SECTION("interface")
     {

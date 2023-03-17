@@ -66,7 +66,7 @@ void kernel_starter_start_on_cpu() {
     }
 }
 
-TEST_CASE("kernel_starter: start cuda kernel")
+TEST_CASE("kernel_starter.cu")
 {
 
     SECTION("interface")

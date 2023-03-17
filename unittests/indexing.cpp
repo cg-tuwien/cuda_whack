@@ -22,7 +22,7 @@
 
 #include <catch2/catch_template_test_macros.hpp>
 
-TEMPLATE_TEST_CASE("util helpers", "[util]", int, unsigned, int64_t, uint64_t)
+TEMPLATE_TEST_CASE("indexing.cpp", "", int, unsigned, int64_t, uint64_t)
 {
     SECTION("indexing")
     {

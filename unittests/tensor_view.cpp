@@ -22,7 +22,7 @@
 
 #include "whack/TensorView.h"
 
-TEST_CASE("tensor view")
+TEST_CASE("tensor_view.cpp")
 {
     SECTION("read single dim")
     {
