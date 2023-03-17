@@ -32,6 +32,7 @@ void Tensor_interface()
         CHECK(std::any_cast<thrust::host_vector<int>>(&tensor.memory()) != nullptr);
         tensor.view()(0) = 42;
         CHECK(tensor.view()(0) == 42);
+        CHECK(tensor.host_vector().size() == 16);
     }
     {
         auto tensor = whack::make_host_tensor<int>(2, 3, 4);
@@ -39,6 +40,7 @@ void Tensor_interface()
         CHECK(std::any_cast<thrust::host_vector<int>>(&tensor.memory()) != nullptr);
         tensor.view()(0, 0, 0) = 42;
         CHECK(tensor.view()(0, 0, 0) == 42);
+        CHECK(tensor.host_vector().size() == 2 * 3 * 4);
     }
 
     {
@@ -53,12 +55,16 @@ void Tensor_interface()
         whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [=] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3&) mutable {
             view(0) = 42;
         });
+        CHECK(tensor.device_vector().size() == 16);
+        CHECK(tensor.device_vector()[0] == 42);
     }
 }
 
-    //    dim3 dimBlock = dim3(1, 1, 1);
-    //    dim3 dimGrid = dim3(1, 1, 1);
-    //    whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3&) {});
+void Tensor_copy_to_device()
+{
+    //    auto tensor = whack::make_device_tensor<float>(16);
+    //    CHECK(tensor.device() == whack::ComputeDevice::CUDA);
+    //    CHECK(std::any_cast<thrust::device_vector<float>>(&tensor.memory()) != nullptr);
 }
 
 class FailOnCopy {
@@ -93,13 +99,16 @@ public:
 
 TEST_CASE("Tensor")
 {
-
     SECTION("interface")
     {
         Tensor_interface();
     }
+    SECTION("copy to device")
+    {
+        Tensor_copy_to_device();
+    }
 
-    SECTION("thrust vector is actually movable int an any")
+    SECTION("thrust vector is actually movable into an any")
     {
         thrust::host_vector<FailOnCopy> thrust_vector(16);
         std::any dud = std::move(thrust_vector);

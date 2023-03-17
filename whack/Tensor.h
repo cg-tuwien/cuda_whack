@@ -34,21 +34,36 @@ class Tensor {
 
 public:
     Tensor() = default;
-    __host__ Tensor(thrust::host_vector<T>&& memory, TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view)
+    Tensor(thrust::host_vector<T>&& memory, TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view)
         : m_memory(std::move(memory))
         , m_view(view)
         , m_device(ComputeDevice::CPU)
     {
     }
-    __host__ Tensor(thrust::device_vector<T>&& memory, TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view)
+    Tensor(thrust::device_vector<T>&& memory, TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view)
         : m_memory(std::move(memory))
         , m_view(view)
         , m_device(ComputeDevice::CUDA)
     {
     }
-    __host__ [[nodiscard]] TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view() const { return m_view; }
-    __host__ [[nodiscard]] ComputeDevice device() const { return m_device; }
-    __host__ [[nodiscard]] const std::any& memory() const { return m_memory; }
+
+    thrust::host_vector<T>& host_vector()
+    {
+        auto* memory_vector = std::any_cast<thrust::host_vector<T>>(&m_memory);
+        assert(memory_vector != nullptr);
+        return *memory_vector;
+    }
+
+    thrust::device_vector<T>& device_vector()
+    {
+        auto* memory_vector = std::any_cast<thrust::device_vector<T>>(&m_memory);
+        assert(memory_vector != nullptr);
+        return *memory_vector;
+    }
+
+    [[nodiscard]] TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view() const { return m_view; }
+    [[nodiscard]] ComputeDevice device() const { return m_device; }
+    [[nodiscard]] const std::any& memory() const { return m_memory; }
 };
 
 template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
