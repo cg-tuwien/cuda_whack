@@ -30,19 +30,21 @@ template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typen
 class Tensor {
     std::any m_memory;
     ComputeDevice m_device = ComputeDevice::Invalid;
-    TensorView<T, n_dims, IndexStoreType, IndexCalculateType> m_view;
+
+    using Dimensions = whack::Array<IndexStoreType, n_dims>;
+    Dimensions m_dimensions = {};
 
 public:
     Tensor() = default;
-    Tensor(thrust::host_vector<T>&& memory, TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view)
+    Tensor(thrust::host_vector<T>&& memory, const Dimensions& dimensions)
         : m_memory(std::move(memory))
-        , m_view(view)
+        , m_dimensions(dimensions)
         , m_device(ComputeDevice::CPU)
     {
     }
-    Tensor(thrust::device_vector<T>&& memory, TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view)
+    Tensor(thrust::device_vector<T>&& memory, const Dimensions& dimensions)
         : m_memory(std::move(memory))
-        , m_view(view)
+        , m_dimensions(dimensions)
         , m_device(ComputeDevice::CUDA)
     {
     }
@@ -61,7 +63,43 @@ public:
         return *memory_vector;
     }
 
-    [[nodiscard]] TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view() const { return m_view; }
+    const thrust::host_vector<T>& host_vector() const
+    {
+        auto* memory_vector = std::any_cast<thrust::host_vector<T>>(&m_memory);
+        assert(memory_vector != nullptr);
+        return *memory_vector;
+    }
+
+    const thrust::device_vector<T>& device_vector() const
+    {
+        auto* memory_vector = std::any_cast<thrust::device_vector<T>>(&m_memory);
+        assert(memory_vector != nullptr);
+        return *memory_vector;
+    }
+
+    [[nodiscard]] TensorView<const T, n_dims, IndexStoreType, IndexCalculateType> view() const
+    {
+        switch (m_device) {
+        case ComputeDevice::CPU:
+            return make_tensor_view(host_vector(), m_dimensions);
+        case ComputeDevice::CUDA:
+            return make_tensor_view(device_vector(), m_dimensions);
+        }
+        assert(false);
+        return {};
+    }
+
+    [[nodiscard]] TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view()
+    {
+        switch (m_device) {
+        case ComputeDevice::CPU:
+            return make_tensor_view(host_vector(), m_dimensions);
+        case ComputeDevice::CUDA:
+            return make_tensor_view(device_vector(), m_dimensions);
+        }
+        assert(false);
+        return {};
+    }
     [[nodiscard]] ComputeDevice device() const { return m_device; }
     [[nodiscard]] const std::any& memory() const { return m_memory; }
 };
@@ -75,10 +113,12 @@ Tensor<T, sizeof...(DimensionTypes)> make_host_tensor(DimensionTypes... dim)
     static_assert(std::is_unsigned_v<IndexCalculateType>);
     static_assert(std::is_move_assignable_v<thrust::host_vector<T>>, "thrust::host_vector<T> must be movable");
 
+    using Dimensions = whack::Array<IndexStoreType, sizeof...(DimensionTypes)>;
+
     const IndexCalculateType size = (std::make_unsigned_t<IndexCalculateType>(dim) * ...);
     thrust::host_vector<T> memory(size);
-    const auto view = whack::make_tensor_view(memory, dim...);
-    return { std::move(memory), view };
+
+    return { std::move(memory), Dimensions { IndexStoreType(dim)... } };
 }
 
 template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
@@ -90,10 +130,12 @@ Tensor<T, sizeof...(DimensionTypes)> make_device_tensor(DimensionTypes... dim)
     static_assert(std::is_unsigned_v<IndexCalculateType>);
     static_assert(std::is_move_assignable_v<thrust::host_vector<T>>, "thrust::host_vector<T> must be movable");
 
+    using Dimensions = whack::Array<IndexStoreType, sizeof...(DimensionTypes)>;
+
     const IndexCalculateType size = (std::make_unsigned_t<IndexCalculateType>(dim) * ...);
     thrust::device_vector<T> memory(size);
-    const auto view = whack::make_tensor_view(memory, dim...);
-    return { std::move(memory), view }; // something not working. overthink design. this way we loose access to thrust vectors (which we probably don't want).
+
+    return { std::move(memory), Dimensions { IndexStoreType(dim)... } };
 }
 
 }

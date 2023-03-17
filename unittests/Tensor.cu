@@ -60,6 +60,16 @@ void Tensor_interface()
     }
 }
 
+void Tensor_copy()
+{
+    auto a = whack::make_host_tensor<int>(16);
+    auto b = a;
+    CHECK(a.host_vector().begin() != b.host_vector().begin());
+
+    CHECK(&a.view()(0) == &a.host_vector().front()); // views must point to something else
+    CHECK(&b.view()(0) == &b.host_vector().front()); // views must point to something else
+}
+
 void Tensor_copy_to_device()
 {
     //    auto tensor = whack::make_device_tensor<float>(16);
@@ -103,6 +113,12 @@ TEST_CASE("Tensor")
     {
         Tensor_interface();
     }
+
+    SECTION("copy")
+    {
+        Tensor_copy();
+    }
+
     SECTION("copy to device")
     {
         Tensor_copy_to_device();
