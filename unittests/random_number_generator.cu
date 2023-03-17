@@ -25,24 +25,16 @@ whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed(bool cuda)
 {
     whack::Tensor<float, 3> retval;
     if (cuda) {
-        thrust::device_vector<float> memory(16 * 16 * 1024);
-        static_assert(std::is_move_assignable_v<thrust::device_vector<float>>, "thrust::host_vector<float> must be movable");
-        retval.view = whack::make_tensor_view(memory, 16u, 16u, 1024u);
-        retval.memory = std::move(memory);
-        retval.device = whack::ComputeDevice::CUDA;
+        retval = whack::make_device_tensor<float>(16, 16, 1024);
     } else {
-        thrust::host_vector<float> memory(16 * 16 * 1024);
-        static_assert(std::is_move_assignable_v<thrust::host_vector<float>>, "thrust::host_vector<float> must be movable");
-        retval.view = whack::make_tensor_view(memory, 16u, 16u, 1024u);
-        retval.memory = std::move(memory);
-        retval.device = whack::ComputeDevice::CPU;
+        retval = whack::make_host_tensor<float>(16, 16, 1024);
     }
 
     dim3 dimBlock = dim3(32, 4, 1);
     dim3 dimGrid = dim3(1, 4, 16);
-    auto view = retval.view;
-    //        gpe::start_serial<gpe::ComputeDevice::CPU>(gpe::device(out_mixture), dimGrid, dimBlock, [=]
-    whack::start_parallel(retval.device, dimGrid, dimBlock, [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
+    auto view = retval.view();
+
+    whack::start_parallel(retval.device(), dimGrid, dimBlock, [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
         auto rng = whack::RandomNumberGenerator<float>(55, gpe_gridDim, gpe_blockDim, gpe_blockIdx, gpe_threadIdx);
         const unsigned idX = (gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x) * 32;
         const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
@@ -63,10 +55,10 @@ TEMPLATE_TEST_CASE("random_number_generator", "", std::true_type, std::false_typ
     //    std::cout << rnd << std::endl;
 
     thrust::host_vector<float> host_vector;
-    if (rnd.device == whack::ComputeDevice::CPU)
-        host_vector = std::any_cast<thrust::host_vector<float>>(rnd.memory);
+    if (rnd.device() == whack::ComputeDevice::CPU)
+        host_vector = std::any_cast<thrust::host_vector<float>>(rnd.memory());
     else
-        host_vector = std::any_cast<thrust::device_vector<float>>(rnd.memory);
+        host_vector = std::any_cast<thrust::device_vector<float>>(rnd.memory());
 
     REQUIRE(host_vector.size() == 16 * 16 * 1024);
 
@@ -85,9 +77,9 @@ TEMPLATE_TEST_CASE("random_number_generator", "", std::true_type, std::false_typ
     //    CHECK((rnd == torch::zeros_like(rnd)).sum().cpu().item<int64_t>() < rnd.numel() * 0.001);
     //    CHECK(rnd.view({-1, 2}).cov().cpu().item<float>() == Approx(1.0).scale(1).epsilon(0.001));
     auto rnd2 = compute_random_numbers_with_fixed_seed(use_cuda);
-    const auto rnd_v = rnd.view;
-    const auto rnd2_v = rnd2.view;
-    whack::start_parallel(rnd2.device, dim3(32, 16, 16), dim3(32, 1, 1), [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
+    const auto rnd_v = rnd.view();
+    const auto rnd2_v = rnd2.view();
+    whack::start_parallel(rnd2.device(), dim3(32, 16, 16), dim3(32, 1, 1), [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
         const unsigned idX = gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x;
         const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
         const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;
