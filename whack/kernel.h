@@ -53,6 +53,7 @@ namespace detail {
     {
         const auto n = blockDim.x * blockDim.y * blockDim.z;
         const auto thread_count = n; // std::min(n, 64u);
+        (void)thread_count;
 
         //        gpe::detail::CpuSynchronisationPoint::setThreadCount(thread_count);
 
@@ -61,7 +62,7 @@ namespace detail {
                 for (unsigned blockIdxX = 0; blockIdxX < gridDim.x; ++blockIdxX) {
                     const auto blockIdx = dim3 { blockIdxX, blockIdxY, blockIdxZ };
 #pragma omp parallel for num_threads(thread_count)
-                    for (int i = 0; i < n; ++i) {
+                    for (unsigned i = 0; i < n; ++i) {
                         const auto threadIdx_arr = split_n_dim_index<unsigned, 3>({ blockDim.x, blockDim.y, blockDim.z }, i);
                         const auto threadIdx = dim3 { threadIdx_arr[0], threadIdx_arr[1], threadIdx_arr[2] };
                         function(gridDim, blockDim, blockIdx, threadIdx);
