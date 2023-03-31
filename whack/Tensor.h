@@ -105,6 +105,7 @@ public:
     [[nodiscard]] Tensor host_copy() const;
 
     [[nodiscard]] ComputeDevice device() const { return m_device; }
+    [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
     [[nodiscard]] const std::any& memory() const { return m_memory; }
 };
 
