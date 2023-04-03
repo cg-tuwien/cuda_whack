@@ -42,9 +42,7 @@ WHACK_DEVICES_INLINE
 }
 
 template <typename large_type, unsigned n_dims, typename small_type = large_type>
-WHACK_DEVICES_INLINE
-    large_type
-    join_n_dim_index(const Array<small_type, n_dims>& dimensions, const Array<small_type, n_dims>& idx)
+WHACK_DEVICES_INLINE large_type join_n_dim_index(const Array<small_type, n_dims>& dimensions, const Array<small_type, n_dims>& idx)
 {
     large_type joined_idx = 0;
     large_type cum_dims = 1;

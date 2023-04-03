@@ -84,6 +84,9 @@ void run_random_number_generator_1d(bool use_cuda)
         const unsigned idX = gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x;
         const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
         const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;
+        (void)idX;
+        (void)idY;
+        (void)idZ;
         assert(rnd_v(idZ, idY, idX) == rnd2_v(idZ, idY, idX));
     });
 }
@@ -168,6 +171,9 @@ void run_random_number_generator_2d(bool use_cuda)
         const unsigned idX = gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x;
         const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
         const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;
+        (void)idX;
+        (void)idY;
+        (void)idZ;
         assert(rnd_v(idZ, idY, idX) == rnd2_v(idZ, idY, idX));
     });
 }
