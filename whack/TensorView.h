@@ -17,6 +17,7 @@
  *****************************************************************************/
 
 #pragma once
+#define WHACK_STRIDE_BASED_CALCULATION
 
 #include <cinttypes>
 
@@ -35,47 +36,75 @@ class TensorView {
     static_assert(std::is_unsigned_v<IndexCalculateType>);
 
     using Index = whack::Array<IndexStoreType, n_dims>;
-    T* data = nullptr;
-    Index dimensions = {};
+    T* m_data = nullptr;
+#ifdef WHACK_STRIDE_BASED_CALCULATION
+    whack::Array<IndexCalculateType, n_dims> m_strides = {};
+#endif
+#if !defined(NDEBUG) || !defined(WHACK_STRIDE_BASED_CALCULATION)
+    Index m_dimensions = {};
+#endif
+
+    WHACK_DEVICES_INLINE IndexCalculateType offset(const Index& index) const
+    {
+#ifdef WHACK_STRIDE_BASED_CALCULATION
+        IndexCalculateType offset = index[n_dims - 1];
+        for (unsigned i = 0; i < n_dims - 1; ++i) {
+            offset += index[i] * m_strides[i];
+        }
+        return offset;
+#else
+        return whack::join_n_dim_index<IndexCalculateType, n_dims, IndexStoreType>(m_dimensions, index);
+#endif
+    }
 
 public:
     TensorView() = default;
 
     WHACK_DEVICES_INLINE
     TensorView(T* data, const Index& dimensions)
-        : data(data)
-        , dimensions(dimensions)
+        : m_data(data)
+#if !defined(NDEBUG) || !defined(WHACK_STRIDE_BASED_CALCULATION)
+        , m_dimensions(dimensions)
+#endif
     {
+#ifdef WHACK_STRIDE_BASED_CALCULATION
+        IndexCalculateType cum_dims = 1;
+        for (unsigned i = n_dims - 1; i < n_dims; --i) {
+            m_strides[i] = cum_dims;
+            cum_dims *= dimensions[i];
+        }
+#endif
     }
-    //    const typename std::remove_const_t<T>& operator()(const Index& index) const
+
     template <typename U = T>
     WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), const U&>::type operator()(const Index& index) const
     {
         for (unsigned i = 0; i < n_dims; ++i)
-            assert(index[i] < dimensions[i]);
-        return *(data + whack::join_n_dim_index<IndexCalculateType, n_dims, IndexStoreType>(dimensions, index));
+            assert(index[i] < m_dimensions[i]);
+
+        return *(m_data + offset(index));
     }
 
     template <typename U = T>
     WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), U&>::type operator()(const Index& index)
     {
         for (unsigned i = 0; i < n_dims; ++i)
-            assert(index[i] < dimensions[i]);
-        return *(data + whack::join_n_dim_index<IndexCalculateType, n_dims, IndexStoreType>(dimensions, index));
+            assert(index[i] < m_dimensions[i]);
+        return *(m_data + offset(index));
     }
 
     WHACK_DEVICES_INLINE
     const T& operator()(const IndexStoreType& index) const
     {
-        assert(index < dimensions[0]);
-        return *(data + index);
+        assert(index < m_dimensions[0]);
+        return *(m_data + index);
     }
 
     WHACK_DEVICES_INLINE
     T& operator()(const IndexStoreType& index)
     {
-        assert(index < dimensions[0]);
-        return *(data + index);
+        assert(index < m_dimensions[0]);
+        return *(m_data + index);
     }
 
     template <typename... IndexTypes>
@@ -92,7 +121,7 @@ public:
 };
 
 // whack::Array api
-template <typename ThrustVector, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
+template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename ThrustVector, uint32_t n_dims>
 TensorView<typename std::remove_pointer_t<decltype(thrust::raw_pointer_cast(ThrustVector().data()))>, n_dims, IndexStoreType, IndexCalculateType>
 make_tensor_view(ThrustVector& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
 {
@@ -111,7 +140,7 @@ make_tensor_view(ThrustVector& data, const whack::Array<IndexStoreType, n_dims>&
 }
 
 // parameter pack api
-template <typename ThrustVector, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
+template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename ThrustVector, typename... DimensionTypes>
 TensorView<
     typename std::remove_pointer_t<decltype(thrust::raw_pointer_cast(ThrustVector().data()))>,
     sizeof...(DimensionTypes),
