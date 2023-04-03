@@ -18,10 +18,13 @@
 
 #include <cstdint>
 
+#include <catch2/benchmark/catch_benchmark.hpp>
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
-
+#include <nvToolsExt.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/sequence.h>
 
 #include "whack/TensorView.h"
 #include "whack/kernel.h"
@@ -70,6 +73,67 @@ void tensor_view_cuda_read_write_multi_dim_cpu()
     }
 }
 
+void tensor_view_cuda_benchmark_read_write_multi_dim_cuda()
+{
+    auto batch_dim = 5000;
+    auto thread_dim = 512;
+    auto vector_dim = 256;
+    thrust::device_vector<int> tensor_1(batch_dim * thread_dim * vector_dim);
+    thrust::device_vector<float> tensor_2(batch_dim * thread_dim);
+    thrust::sequence(tensor_1.begin(), tensor_1.end());
+    thrust::fill(tensor_2.begin(), tensor_2.end(), 0);
+
+    const auto tensor_1_view = whack::make_tensor_view(tensor_1, batch_dim, vector_dim, thread_dim);
+    auto tensor_2_view = whack::make_tensor_view(tensor_2, batch_dim, thread_dim);
+
+    dim3 dimBlock = dim3(thread_dim, 1, 1);
+    dim3 dimGrid = dim3(1, batch_dim, 1);
+
+    cudaDeviceSynchronize();
+    BENCHMARK("tensor api")
+    {
+        const auto nvtx_range = nvtxRangeStart("tensor_api");
+        whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [tensor_1_view, tensor_2_view, batch_dim, thread_dim, vector_dim] __host__ __device__(const dim3&, const dim3&, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
+            const auto batch_id = gpe_blockIdx.y;
+            const auto thread_id = gpe_threadIdx.x;
+            float tmp = 0;
+            for (unsigned i = 0; i < vector_dim; ++i) {
+                tmp += tensor_1_view(batch_id, i, thread_id) / float(batch_dim * thread_dim * vector_dim);
+                const auto i_l = i - unsigned(i > 0);
+                tmp -= tensor_1_view(batch_id, i_l, thread_id);
+                const auto i_h = i + unsigned(i < (vector_dim - 1));
+                tmp += tensor_1_view(batch_id, i_h, thread_id);
+            }
+            tensor_2_view(batch_id, thread_id) = tmp;
+        });
+        nvtxRangeEnd(nvtx_range);
+        cudaDeviceSynchronize(); // sync not needed, because the kernels depend on each other.
+    };
+
+    cudaDeviceSynchronize();
+    BENCHMARK("manual api")
+    {
+        const auto nvtx_range = nvtxRangeStart("manual_api");
+        int* tensor_1_ptr = thrust::raw_pointer_cast(tensor_1.data());
+        float* tensor_2_ptr = thrust::raw_pointer_cast(tensor_2.data());
+        whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [tensor_1_ptr, tensor_2_ptr, batch_dim, thread_dim, vector_dim] __host__ __device__(const dim3&, const dim3&, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
+            const auto batch_id = gpe_blockIdx.y;
+            const auto thread_id = gpe_threadIdx.x;
+            float tmp = 0;
+            for (unsigned i = 0; i < vector_dim; ++i) {
+                tmp += *(tensor_1_ptr + batch_id * thread_dim * vector_dim + i * thread_dim + thread_id) / float(batch_dim * thread_dim * vector_dim);
+                const auto i_l = i - unsigned(i > 0);
+                tmp -= *(tensor_1_ptr + batch_id * thread_dim * vector_dim + i_l * thread_dim + thread_id);
+                const auto i_h = i + unsigned(i < (vector_dim - 1));
+                tmp += *(tensor_1_ptr + batch_id * thread_dim * vector_dim + i_h * thread_dim + thread_id);
+            }
+            *(tensor_2_ptr + batch_id * thread_dim + thread_id) = tmp;
+        });
+        nvtxRangeEnd(nvtx_range);
+        cudaDeviceSynchronize(); // sync not needed, because the kernels depend on each other.
+    };
+}
+
 TEST_CASE("tensor_view.cu")
 {
     SECTION("read/write multi dim cuda")
@@ -79,5 +143,13 @@ TEST_CASE("tensor_view.cu")
     SECTION("read/write multi dim cpu")
     {
         tensor_view_cuda_read_write_multi_dim_cpu();
+    }
+}
+
+TEST_CASE("tensor_view.cu/benchmark")
+{
+    SECTION("benchmark read/write multi dim cuda")
+    {
+        tensor_view_cuda_benchmark_read_write_multi_dim_cuda();
     }
 }
