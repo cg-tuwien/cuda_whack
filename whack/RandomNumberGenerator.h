@@ -13,9 +13,9 @@
 
 namespace whack {
 
-template <typename scalar_t>
+template <typename scalar_t, typename engine>
 class RandomNumberGenerator {
-    curandState_t m_state;
+    engine m_state;
 
 public:
     __device__
@@ -52,15 +52,19 @@ public:
         return glm::vec<3, scalar_t>(r.x, r.y, rz);
     }
 };
+
+typedef RandomNumberGenerator<float, curandStateXORWOW_t> RNGFastGeneration;
+typedef RandomNumberGenerator<float, curandStatePhilox4_32_10_t> RNGFastOffset;
+
 }
 #else
 #include <random>
 
 namespace whack {
 
-template <typename scalar_t>
+template <typename scalar_t, typename engine>
 class RandomNumberGenerator {
-    std::default_random_engine m_engine;
+    engine m_engine;
 
 public:
     RandomNumberGenerator(uint64_t seed, const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx)
@@ -89,6 +93,9 @@ public:
         return glm::vec<3, scalar_t>(normal_distribution(m_engine), normal_distribution(m_engine), normal_distribution(m_engine));
     }
 };
+
+typedef RandomNumberGenerator<float, std::default_random_engine> RNGFastGeneration;
+typedef RandomNumberGenerator<float, std::default_random_engine> RNGFastOffset;
 
 }
 
