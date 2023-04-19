@@ -22,7 +22,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <nvToolsExt.h>
+#include <nvtx3/nvToolsExt.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
@@ -150,8 +150,8 @@ TEST_CASE("tensor_view.cu")
 
 TEMPLATE_TEST_CASE("tensor_view.cu/benchmark", "", uint32_t, uint64_t)
 {
-    SECTION("benchmark read/write multi dim cuda")
-    {
+    //SECTION("benchmark read/write multi dim cuda")
+    //{
         tensor_view_cuda_benchmark_read_write_multi_dim_cuda<TestType>();
-    }
+    //}
 }

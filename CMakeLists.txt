@@ -41,6 +41,8 @@ if(WHACK_BUILD_UNITTESTS OR BUILD_TESTING)
     FetchContent_MakeAvailable(catch2)
 endif()
 
+#find_package(CUDAToolkit)
+
 ############################################ setup ##############################################
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -91,7 +93,7 @@ target_include_directories(whack PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if (WHACK_BUILD_UNITTESTS)
     if (CMAKE_CUDA_COMPILER AND WHACK_BUILD_UNITTESTS_FOR_CUDA)
         add_executable(unittests ${WHACK_UNITTEST_SOURCES} ${WHACK_UNITTEST_SOURCES_CUDA})
-        target_link_libraries(unittests PUBLIC nvToolsExt)
+        #target_link_libraries(unittests PUBLIC nvToolsExt)
     else()
         add_executable(unittests ${WHACK_UNITTEST_SOURCES})
     endif()
