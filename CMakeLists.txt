@@ -5,31 +5,6 @@ option(WHACK_BUILD_UNITTESTS "include unit test targets in the buildsystem" OFF)
 option(WHACK_BUILD_UNITTESTS_FOR_CUDA "include unit tests for the cuda side" OFF)
 option(WHACK_USE_LLVM_LINKER "use lld (llvm) for linking. it's parallel and much faster, but not installed by default. if it's not installed, you'll get errors, that openmp or other stuff is not installed (hard to track down)" OFF)
 
-########################################### sources #############################################
-set(WHACK_SOURCES
-    whack/kernel.h whack/kernel.cpp
-    whack/indexing.h
-    whack/array.h
-    whack/macros.h
-    whack/TensorView.h
-    whack/RandomNumberGenerator.h
-    whack/Tensor.h
-    whack/enums.h
-)
-set(WHACK_UNITTEST_SOURCES
-    unittests/main.cpp
-    unittests/cpu_only_kernel_starter.cpp
-    unittests/indexing.cpp
-    unittests/tensor_view.cpp
-)
-
-set(WHACK_UNITTEST_SOURCES_CUDA
-    unittests/kernel_starter.cu
-    unittests/tensor_view.cu
-    unittests/random_number_generator.cu
-    unittests/Tensor.cu
-)
-
 ######################################## dependencies ###########################################
 include(FetchContent)
 if(NOT TARGET glm::glm)
@@ -85,17 +60,8 @@ endif()
 #include_directories(SYSTEM ${MY_INCLUDE_PATHS} SYSTEM ${TORCH_INCLUDE_DIRS})
 
 ########################################## projects ##############################################
-add_library(whack ${WHACK_SOURCES})
-target_link_libraries(whack PUBLIC OpenMP::OpenMP_CXX glm::glm)
-target_compile_definitions(whack PUBLIC GLM_FORCE_XYZW_ONLY GLM_FORCE_INLINE)
-target_include_directories(whack PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_subdirectory(whack)
 if (WHACK_BUILD_UNITTESTS)
-    if (CMAKE_CUDA_COMPILER AND WHACK_BUILD_UNITTESTS_FOR_CUDA)
-        add_executable(unittests ${WHACK_UNITTEST_SOURCES} ${WHACK_UNITTEST_SOURCES_CUDA})
-        target_link_libraries(unittests PUBLIC CUDA::nvToolsExt)
-    else()
-        add_executable(unittests ${WHACK_UNITTEST_SOURCES})
-    endif()
-    target_link_libraries(unittests PUBLIC Catch2::Catch2WithMain whack)
+    add_subdirectory(unittests)
 endif()
