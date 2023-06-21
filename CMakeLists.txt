@@ -61,7 +61,7 @@ endif()
 
 ########################################## projects ##############################################
 
-add_subdirectory(whack)
+add_subdirectory(src)
 if (WHACK_BUILD_UNITTESTS)
     add_subdirectory(unittests)
 endif()
