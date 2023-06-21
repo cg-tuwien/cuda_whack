@@ -12,23 +12,42 @@
 
 constexpr auto n_batches = 8;
 
-TEST_CASE("random_number_generator.cu: (single threaded)")
-
+TEMPLATE_TEST_CASE("random_number_generator.cu: (single threaded)", "", whack::RNGFastGeneration, whack::RNGFastOffset)
 {
     {
-        auto rng = whack::RNGFastGeneration(55, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 });
+        auto rng = TestType(55, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 });
         const auto rnd1 = rng.normal();
-        rng = whack::RNGFastGeneration(55, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 });
+        rng = TestType(55, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 });
         const auto rnd2 = rng.normal();
         CHECK(rnd1 == Catch::Approx(rnd2));
     }
 }
 
 namespace {
-whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed(bool cuda)
+struct ConfigCudaFastGen {
+    using enable_cuda = std::true_type;
+    using RNG = whack::RNGFastGeneration;
+};
+struct ConfigCudaFastOffset {
+    using enable_cuda = std::true_type;
+    using RNG = whack::RNGFastOffset;
+};
+struct ConfigCpuFastGen {
+    using enable_cuda = std::false_type;
+    using RNG = whack::RNGFastGeneration;
+};
+struct ConfigCpuFastOffset {
+    using enable_cuda = std::false_type;
+    using RNG = whack::RNGFastOffset;
+};
+
+template <typename Config>
+whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed()
 {
+    using RNG = typename Config::RNG;
+
     auto retval = whack::make_host_tensor<float>(n_batches, 16, 1024);
-    if (cuda) {
+    if (Config::enable_cuda::value) {
         retval = retval.device_copy();
     }
 
@@ -37,8 +56,7 @@ whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed(bool cuda)
     auto view = retval.view();
 
     whack::start_parallel(retval.device(), dimGrid, dimBlock, [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
-#
-        auto rng = whack::RNGFastGeneration(55, gpe_gridDim, gpe_blockDim, gpe_blockIdx, gpe_threadIdx);
+        auto rng = RNG(55, gpe_gridDim, gpe_blockDim, gpe_blockIdx, gpe_threadIdx);
         const unsigned idX = (gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x) * 32;
         const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
         const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;
@@ -49,9 +67,10 @@ whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed(bool cuda)
     return retval;
 }
 
-void run_random_number_generator_1d(bool use_cuda)
+template <typename Config>
+void run_random_number_generator_1d()
 {
-    auto rnd = compute_random_numbers_with_fixed_seed(use_cuda);
+    auto rnd = compute_random_numbers_with_fixed_seed<Config>();
     static_assert(std::is_constructible_v<thrust::host_vector<float>, thrust::host_vector<float>>);
     static_assert(std::is_constructible_v<thrust::host_vector<float>, thrust::device_vector<float>>);
     //    std::cout << rnd << std::endl;
@@ -78,7 +97,7 @@ void run_random_number_generator_1d(bool use_cuda)
         / host_vector.size();
     CHECK(variance == Catch::Approx(1.0).scale(1).epsilon(0.01));
 
-    auto rnd2 = compute_random_numbers_with_fixed_seed(use_cuda);
+    auto rnd2 = compute_random_numbers_with_fixed_seed<Config>();
     const auto rnd_v = rnd.view();
     const auto rnd2_v = rnd2.view();
     whack::start_parallel(rnd2.device(), dim3(32, 16, n_batches), dim3(32, 1, 1), [=] __host__ __device__(const dim3&, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
@@ -93,17 +112,19 @@ void run_random_number_generator_1d(bool use_cuda)
 }
 }
 
-TEMPLATE_TEST_CASE("random_number_generator 1d", "", std::true_type, std::false_type)
+TEMPLATE_TEST_CASE("random_number_generator 1d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpuFastGen, ConfigCpuFastOffset)
 {
-    constexpr bool use_cuda = TestType::value;
-    run_random_number_generator_1d(use_cuda); // msvc + cuda can't run cuda kernels inside TEST_CASES
+    run_random_number_generator_1d<TestType>(); // msvc + cuda can't run cuda kernels inside TEST_CASES
 }
 
 namespace {
-whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2_fast_gen(bool cuda)
+template <typename Config>
+whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2()
 {
+    using RNG = typename Config::RNG;
+
     whack::Tensor<glm::vec2, 3> retval;
-    if (cuda) {
+    if (Config::enable_cuda::value) {
         retval = whack::make_device_tensor<glm::vec2>(n_batches, 16, 1024);
     } else {
         retval = whack::make_host_tensor<glm::vec2>(n_batches, 16, 1024);
@@ -114,7 +135,7 @@ whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2_fast_gen(boo
     auto view = retval.view();
 
     whack::start_parallel(retval.device(), dimGrid, dimBlock, [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
-        auto rng = whack::RNGFastGeneration(55, gpe_gridDim, gpe_blockDim, gpe_blockIdx, gpe_threadIdx);
+        auto rng = RNG(55, gpe_gridDim, gpe_blockDim, gpe_blockIdx, gpe_threadIdx);
         const unsigned idX = (gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x) * 32;
         const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
         const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;
@@ -125,44 +146,11 @@ whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2_fast_gen(boo
     return retval;
 }
 
-whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2_fast_offset(bool cuda)
+template <typename Config>
+void run_random_number_generator_2d()
 {
-    whack::Tensor<glm::vec2, 3> retval;
-    if (cuda) {
-        retval = whack::make_device_tensor<glm::vec2>(n_batches, 16, 1024);
-    }
-    else {
-        retval = whack::make_host_tensor<glm::vec2>(n_batches, 16, 1024);
-    }
+    whack::Tensor<glm::vec2, 3> rnd = compute_random_numbers_with_fixed_seed2<Config>();
 
-    dim3 dimBlock = dim3(32, 4, 1);
-    dim3 dimGrid = dim3(1, 4, n_batches);
-    auto view = retval.view();
-
-    whack::start_parallel(retval.device(), dimGrid, dimBlock, [=] __host__ __device__(const dim3 & gpe_gridDim, const dim3 & gpe_blockDim, const dim3 & gpe_blockIdx, const dim3 & gpe_threadIdx) mutable {
-        auto rng = whack::RNGFastOffset(55, gpe_gridDim, gpe_blockDim, gpe_blockIdx, gpe_threadIdx);
-        const unsigned idX = (gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x) * 32;
-        const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
-        const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;
-
-        for (auto i = 0; i < 32; ++i)
-            view(idZ, idY, idX + i) = rng.normal2();
-    });
-    return retval;
-}
-
-void run_random_number_generator_2d(bool use_cuda, bool fast_gen)
-{
-    whack::Tensor<glm::vec2, 3> rnd;
-    if (fast_gen)
-    {
-        rnd = compute_random_numbers_with_fixed_seed2_fast_gen(use_cuda);
-    }
-    else
-    {
-        rnd = compute_random_numbers_with_fixed_seed2_fast_offset(use_cuda);
-    }
-    
     static_assert(std::is_constructible_v<thrust::host_vector<float>, thrust::host_vector<float>>);
     static_assert(std::is_constructible_v<thrust::host_vector<float>, thrust::device_vector<float>>);
     //    std::cout << rnd << std::endl;
@@ -200,15 +188,8 @@ void run_random_number_generator_2d(bool use_cuda, bool fast_gen)
     CHECK(cov == Catch::Approx(0.0).scale(2).epsilon(0.001));
 
     // equality when sampling a second time
-    whack::Tensor<glm::vec2, 3> rnd2;
-    if (fast_gen)
-    {
-        rnd2 = compute_random_numbers_with_fixed_seed2_fast_gen(use_cuda);
-    }
-    else
-    {
-        rnd2 = compute_random_numbers_with_fixed_seed2_fast_offset(use_cuda);
-    }
+    whack::Tensor<glm::vec2, 3> rnd2 = compute_random_numbers_with_fixed_seed2<Config>();
+
     const auto rnd_v = rnd.view();
     const auto rnd2_v = rnd2.view();
     whack::start_parallel(rnd2.device(), dim3(32, 16, n_batches), dim3(32, 1, 1), [=] __host__ __device__(const dim3&, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
@@ -223,14 +204,7 @@ void run_random_number_generator_2d(bool use_cuda, bool fast_gen)
 }
 }
 
-TEMPLATE_TEST_CASE("random_number_generator 2d fast gen", "", std::true_type, std::false_type)
+TEMPLATE_TEST_CASE("random_number_generator 2d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpuFastGen, ConfigCpuFastOffset)
 {
-    constexpr bool use_cuda = TestType::value;
-    run_random_number_generator_2d(use_cuda, true);
-}
-
-TEMPLATE_TEST_CASE("random_number_generator 2d fast offset", "", std::true_type, std::false_type)
-{
-    constexpr bool use_cuda = TestType::value;
-    run_random_number_generator_2d(use_cuda, false);
+    run_random_number_generator_2d<TestType>();
 }
