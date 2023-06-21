@@ -9,7 +9,7 @@
 #include <curand_kernel.h>
 #endif
 
-#ifdef __CUDA_ARCH__
+#if defined(__CUDA_ARCH__)
 
 namespace whack {
 
