@@ -15,9 +15,9 @@ constexpr auto n_batches = 8;
 TEMPLATE_TEST_CASE("random_number_generator.cu: (single threaded)", "", whack::RNGFastGeneration, whack::RNGFastOffset)
 {
     {
-        auto rng = TestType(55, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 });
+        auto rng = TestType(55, 0);
         const auto rnd1 = rng.normal();
-        rng = TestType(55, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 });
+        rng = TestType(55, 0);
         const auto rnd2 = rng.normal();
         CHECK(rnd1 == Catch::Approx(rnd2));
     }
@@ -56,7 +56,10 @@ whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed()
     auto view = retval.view();
 
     whack::start_parallel(retval.device(), dimGrid, dimBlock, [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
-        auto rng = RNG(55, gpe_gridDim, gpe_blockDim, gpe_blockIdx, gpe_threadIdx);
+        const auto sequence_nr = whack::join_n_dim_index<uint64_t, 6, unsigned>(
+            { gpe_blockDim.x, gpe_blockDim.y, gpe_blockDim.z, gpe_gridDim.x, gpe_gridDim.y, gpe_gridDim.z },
+            { gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z, gpe_blockIdx.x, gpe_blockIdx.y, gpe_blockIdx.z });
+        auto rng = RNG(55, sequence_nr);
         const unsigned idX = (gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x) * 32;
         const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
         const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;
@@ -135,7 +138,10 @@ whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2()
     auto view = retval.view();
 
     whack::start_parallel(retval.device(), dimGrid, dimBlock, [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
-        auto rng = RNG(55, gpe_gridDim, gpe_blockDim, gpe_blockIdx, gpe_threadIdx);
+        const auto sequence_nr = whack::join_n_dim_index<uint64_t, 6, unsigned>(
+            { gpe_blockDim.x, gpe_blockDim.y, gpe_blockDim.z, gpe_gridDim.x, gpe_gridDim.y, gpe_gridDim.z },
+            { gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z, gpe_blockIdx.x, gpe_blockIdx.y, gpe_blockIdx.z });
+        auto rng = RNG(55, sequence_nr);
         const unsigned idX = (gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x) * 32;
         const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
         const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;

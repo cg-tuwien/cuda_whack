@@ -19,12 +19,8 @@ class RandomNumberGenerator {
 
 public:
     __device__
-    RandomNumberGenerator(uint64_t seed, const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx)
+    RandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
     {
-        const auto sequence_nr = whack::join_n_dim_index<uint64_t, 6, unsigned>({ gpe_blockDim.x, gpe_blockDim.y, gpe_blockDim.z,
-                                                                                    gpe_gridDim.x, gpe_gridDim.y, gpe_gridDim.z },
-            { gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z,
-                gpe_blockIdx.x, gpe_blockIdx.y, gpe_blockIdx.z });
         curand_init(seed, sequence_nr, 0, &m_state);
     }
 
@@ -67,12 +63,8 @@ class RandomNumberGenerator {
     engine m_engine;
 
 public:
-    RandomNumberGenerator(uint64_t seed, const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx)
-        : m_engine(seed
-            + whack::join_n_dim_index<uint64_t, 6, unsigned>(
-                  { gpe_blockDim.x, gpe_blockDim.y, gpe_blockDim.z, gpe_gridDim.x, gpe_gridDim.y, gpe_gridDim.z },
-                  { gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z, gpe_blockIdx.x, gpe_blockIdx.y, gpe_blockIdx.z })
-                * 437)
+    RandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
+        : m_engine(seed + sequence_nr)
     {
     }
     scalar_t normal()
