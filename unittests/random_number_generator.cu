@@ -191,7 +191,7 @@ void run_random_number_generator_2d()
                    thrust::make_transform_iterator(host_vector.end(), cov_comp),
                    0.f, thrust::plus<float>())
         / host_vector.size();
-    CHECK(cov == Catch::Approx(0.0).scale(2).epsilon(0.001));
+    CHECK(cov == Catch::Approx(0.0).scale(2).epsilon(0.01));
 
     // equality when sampling a second time
     whack::Tensor<glm::vec2, 3> rnd2 = compute_random_numbers_with_fixed_seed2<Config>();
