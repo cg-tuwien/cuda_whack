@@ -48,7 +48,7 @@ struct ConfigCudaFastGen {
 };
 struct ConfigCudaFastOffset {
     using enable_cuda = std::true_type;
-    using RNG = whack::GpuRNGFastOffset;
+    using RNG = whack::GpuRNGFastInit;
 };
 struct ConfigCpu {
     using enable_cuda = std::false_type;

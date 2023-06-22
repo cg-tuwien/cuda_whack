@@ -44,13 +44,6 @@ public:
     }
 };
 
-using GpuRNGFastGeneration = GpuRandomNumberGenerator<float, curandStateXORWOW_t>;
-using GpuRNGFastOffset = GpuRandomNumberGenerator<float, curandStatePhilox4_32_10_t>;
-
-}
-
-namespace whack {
-
 template <typename scalar_t, typename Unused = void>
 class CpuRandomNumberGenerator {
     std::default_random_engine m_engine;
@@ -80,6 +73,29 @@ public:
 };
 
 using CpuRNG = CpuRandomNumberGenerator<float>;
+using GpuRNGFastGeneration = GpuRandomNumberGenerator<float, curandStateXORWOW_t>;
+using GpuRNGFastInit = GpuRandomNumberGenerator<float, curandStatePhilox4_32_10_t>;
+
+
+// KernelRNG* must be used only from within the kernel
+#ifdef __CUDACC__
+// warning using nvcc
+#ifdef __CUDA_ARCH__
+// device code trajectory
+using KernelRNGFastGeneration  = GpuRNGFastGeneration;
+using KernelRNGFastInit  = GpuRNGFastInit;
+#else
+// nvcc host code trajectory
+using KernelRNGFastGeneration  = CpuRNG;
+using KernelRNGFastInit  = CpuRNG;
+#endif
+#else
+// non-nvcc code trajectory
+using KernelRNGFastGeneration  = CpuRNG;
+using KernelRNGFastInit  = CpuRNG;
+#endif
+
+
 
 }
 

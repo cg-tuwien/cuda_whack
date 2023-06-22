@@ -18,6 +18,7 @@
 
 #pragma once
 #include <any>
+#include <numeric>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
@@ -26,6 +27,9 @@
 
 namespace whack {
 
+/**
+ * @brief The Tensor class is a device type erased holder of memory. Use the view() member function to get an accessor object.
+ */
 template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 class Tensor {
     std::any m_memory;
@@ -41,12 +45,14 @@ public:
         , m_dimensions(dimensions)
         , m_device(ComputeDevice::CPU)
     {
+        assert(memory.size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(0), std::multiplies<IndexCalculateType>()));
     }
     Tensor(thrust::device_vector<T>&& memory, const Dimensions& dimensions)
         : m_memory(std::move(memory))
         , m_dimensions(dimensions)
         , m_device(ComputeDevice::CUDA)
     {
+        assert(memory.size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(0), std::multiplies<IndexCalculateType>()));
     }
 
     [[nodiscard]] thrust::host_vector<T>& host_vector()

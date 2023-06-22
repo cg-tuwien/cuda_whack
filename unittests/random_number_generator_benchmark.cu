@@ -61,7 +61,7 @@ void run_random_number_generator_2d()
 }
 }
 
-TEMPLATE_TEST_CASE("random_number_generator benchmark 2d", "", whack::GpuRNGFastGeneration, whack::GpuRNGFastOffset)
+TEMPLATE_TEST_CASE("random_number_generator benchmark 2d", "", whack::GpuRNGFastGeneration, whack::GpuRNGFastInit)
 {
     run_random_number_generator_2d<TestType>();
 }

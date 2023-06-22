@@ -29,6 +29,9 @@
 
 namespace whack {
 
+/**
+ * @brief Use TensorView for passing a tensor to kernels. Unlike a Tensor, it can be copied to the gpu using lambda capture.
+ */
 template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 class TensorView {
     static_assert(std::is_integral_v<IndexStoreType>);
