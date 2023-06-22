@@ -92,12 +92,8 @@ void run_random_number_generator_1d()
     static_assert(std::is_constructible_v<thrust::host_vector<float>, thrust::device_vector<float>>);
     //    std::cout << rnd << std::endl;
 
-    thrust::host_vector<float> host_vector;
-    if (rnd.device() == whack::ComputeDevice::CPU)
-        host_vector = std::any_cast<thrust::host_vector<float>>(rnd.memory());
-    else
-        host_vector = std::any_cast<thrust::device_vector<float>>(rnd.memory());
-
+    const auto rnd_host = rnd.host_copy();
+    thrust::host_vector<float> host_vector = rnd_host.host_vector();
     REQUIRE(host_vector.size() == n_batches * 16 * 1024);
 
     // mean
@@ -127,14 +123,6 @@ void run_random_number_generator_1d()
         assert(rnd_v(idZ, idY, idX) == rnd2_v(idZ, idY, idX));
     });
 }
-}
-
-TEMPLATE_TEST_CASE("random_number_generator 1d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpu)
-{
-    run_random_number_generator_1d<TestType>(); // msvc + cuda can't run cuda kernels inside TEST_CASES
-}
-
-namespace {
 template <typename Config>
 whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2()
 {
@@ -175,7 +163,8 @@ void run_random_number_generator_2d()
     static_assert(std::is_constructible_v<thrust::host_vector<float>, thrust::device_vector<float>>);
     //    std::cout << rnd << std::endl;
 
-    thrust::host_vector<glm::vec2> host_vector = rnd.host_copy().host_vector();
+    const auto rnd_host = rnd.host_copy();
+    thrust::host_vector<glm::vec2> host_vector = rnd_host.host_vector();
     std::vector<glm::vec2> std_vec;
     std_vec.resize(host_vector.size());
     thrust::copy(host_vector.begin(), host_vector.end(), std_vec.begin());
@@ -222,9 +211,22 @@ void run_random_number_generator_2d()
         assert(rnd_v(idZ, idY, idX) == rnd2_v(idZ, idY, idX));
     });
 }
+
+
+}
+
+
+TEMPLATE_TEST_CASE("random_number_generator 1d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpu)
+{
+    run_random_number_generator_1d<TestType>(); // msvc + cuda can't run cuda kernels inside TEST_CASES
 }
 
 TEMPLATE_TEST_CASE("random_number_generator 2d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpu)
 {
     run_random_number_generator_2d<TestType>();
+}
+
+TEMPLATE_TEST_CASE("RNG state tensor", "", thrust::host_vector<float>, thrust::device_vector<float>)
+{
+    run_rng_state_tensor_test<TestType>();
 }

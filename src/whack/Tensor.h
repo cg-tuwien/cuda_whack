@@ -55,7 +55,7 @@ public:
         assert(memory.size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(0), std::multiplies<IndexCalculateType>()));
     }
 
-    [[nodiscard]] thrust::host_vector<T>& host_vector()
+    [[nodiscard]] thrust::host_vector<T>& host_vector() &
     {
         assert(m_device == ComputeDevice::CPU);
         auto* memory_vector = std::any_cast<thrust::host_vector<T>>(&m_memory);
@@ -63,7 +63,17 @@ public:
         return *memory_vector;
     }
 
-    [[nodiscard]] thrust::device_vector<T>& device_vector()
+    [[nodiscard]] const thrust::host_vector<T>& host_vector() const &
+    {
+        auto* memory_vector = std::any_cast<thrust::host_vector<T>>(&m_memory);
+        assert(memory_vector != nullptr);
+        return *memory_vector;
+    }
+
+    /// disalow calling on a temporary
+    [[nodiscard]] thrust::host_vector<T>& host_vector() && = delete;
+
+    [[nodiscard]] thrust::device_vector<T>& device_vector() &
     {
         assert(m_device == ComputeDevice::CUDA);
         auto* memory_vector = std::any_cast<thrust::device_vector<T>>(&m_memory);
@@ -71,19 +81,15 @@ public:
         return *memory_vector;
     }
 
-    [[nodiscard]] const thrust::host_vector<T>& host_vector() const
-    {
-        auto* memory_vector = std::any_cast<thrust::host_vector<T>>(&m_memory);
-        assert(memory_vector != nullptr);
-        return *memory_vector;
-    }
-
-    [[nodiscard]] const thrust::device_vector<T>& device_vector() const
+    [[nodiscard]] const thrust::device_vector<T>& device_vector() const &
     {
         auto* memory_vector = std::any_cast<thrust::device_vector<T>>(&m_memory);
         assert(memory_vector != nullptr);
         return *memory_vector;
     }
+
+    /// disalow calling on a temporary
+    [[nodiscard]] thrust::host_vector<T>& device_vector() && = delete;
 
     [[nodiscard]] TensorView<const T, n_dims, IndexStoreType, IndexCalculateType> view() const
     {
