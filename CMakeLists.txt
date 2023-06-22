@@ -4,6 +4,8 @@ project(cuda_whack LANGUAGES CUDA CXX)
 option(WHACK_BUILD_UNITTESTS "include unit test targets in the buildsystem" OFF)
 option(WHACK_BUILD_UNITTESTS_FOR_CUDA "include unit tests for the cuda side" OFF)
 option(WHACK_USE_LLVM_LINKER "use lld (llvm) for linking. it's parallel and much faster, but not installed by default. if it's not installed, you'll get errors, that openmp or other stuff is not installed (hard to track down)" OFF)
+option(WHACK_ENABLE_ASSERTS "enable asserts (do not define NDEBUG)" OFF)
+
 
 ######################################## dependencies ###########################################
 include(FetchContent)
@@ -32,13 +34,14 @@ string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -g -G")
 
 if(NOT MSVC)
     #string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler '-fPIC,-fopenmp,-ffast-math,-fno-finite-math-only,-std=c++17'  --use_fast_math")
-    string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --generate-line-info -Xcompiler '-O4,-march=native' -O3")
+#    string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --generate-line-info -Xcompiler '-O4,-march=native' -O3") # seems like this stopped working on cuda 11.8 and g++ 11.3
+    string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --generate-line-info -Xcompiler -O3 -march=native")
 
     # gcc 10 is buggy (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100102)
     #string(APPEND CMAKE_CUDA_FLAGS " -ccbin /usr/bin/g++-9")
 
     string(APPEND CMAKE_CXX_FLAGS " -ffast-math -fno-finite-math-only")
-    string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O4 -march=native")
+    string(APPEND CMAKE_CXX_FLAGS_RELEASE -O4 -march=native)
 endif()
 
 if (WHACK_USE_LLVM_LINKER)
