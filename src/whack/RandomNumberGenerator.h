@@ -1,25 +1,20 @@
 #pragma once
+#include <random>
 #include <cuda_runtime.h>
+#include <curand_kernel.h>
 #include <glm/glm.hpp>
 
-#include "indexing.h"
 #include "macros.h"
-
-#ifdef __CUDACC__
-#include <curand_kernel.h>
-#endif
-
-#if defined(__CUDA_ARCH__)
 
 namespace whack {
 
 template <typename scalar_t, typename engine>
-class RandomNumberGenerator {
+class GpuRandomNumberGenerator {
     engine m_state;
 
 public:
     __device__
-    RandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
+    GpuRandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
     {
         curand_init(seed, sequence_nr, 0, &m_state);
     }
@@ -49,21 +44,19 @@ public:
     }
 };
 
-typedef RandomNumberGenerator<float, curandStateXORWOW_t> RNGFastGeneration;
-typedef RandomNumberGenerator<float, curandStatePhilox4_32_10_t> RNGFastOffset;
+using GpuRNGFastGeneration = GpuRandomNumberGenerator<float, curandStateXORWOW_t>;
+using GpuRNGFastOffset = GpuRandomNumberGenerator<float, curandStatePhilox4_32_10_t>;
 
 }
-#else
-#include <random>
 
 namespace whack {
 
-template <typename scalar_t, typename engine>
-class RandomNumberGenerator {
-    engine m_engine;
+template <typename scalar_t, typename Unused = void>
+class CpuRandomNumberGenerator {
+    std::default_random_engine m_engine;
 
 public:
-    RandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
+    CpuRandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
         : m_engine(seed + sequence_nr)
     {
     }
@@ -86,12 +79,9 @@ public:
     }
 };
 
-typedef RandomNumberGenerator<float, std::default_random_engine> RNGFastGeneration;
-typedef RandomNumberGenerator<float, std::default_random_engine> RNGFastOffset;
+using CpuRNG = CpuRandomNumberGenerator<float>;
 
 }
-
-#endif
 
 // namespace whack {
 //// compiler errors if moved into the RandomNumberGenerator class

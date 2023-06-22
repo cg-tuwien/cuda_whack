@@ -20,6 +20,7 @@
 #define WHACK_STRIDE_BASED_CALCULATION
 
 #include <cinttypes>
+#include <type_traits>
 
 #include <thrust/detail/raw_pointer_cast.h>
 

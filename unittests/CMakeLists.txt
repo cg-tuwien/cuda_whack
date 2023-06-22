@@ -14,6 +14,7 @@ if (CMAKE_CUDA_COMPILER AND WHACK_BUILD_UNITTESTS_FOR_CUDA)
             kernel_starter.cu
             tensor_view.cu
             random_number_generator.cu
+            random_number_generator_benchmark.cu
             Tensor.cu
     )
     target_link_libraries(unittests PUBLIC CUDA::nvToolsExt)

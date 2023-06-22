@@ -17,21 +17,34 @@
  *****************************************************************************/
 
 #pragma once
+#include <cuda_runtime.h>
+
+//#ifdef __CUDACC__
+//#warning using nvcc
+//#ifdef __CUDA_ARCH__
+//#warning device code trajectory
+//#else
+//#warning nvcc host code trajectory
+//#endif
+//#else
+//#warning non-nvcc code trajectory
+//#endif
+
 
 #ifdef __CUDACC__
-	#define WHACK_DEVICES __host__ __device__
+    #define WHACK_DEVICES __host__ __device__
 #else
-	#define WHACK_DEVICES
+    #define WHACK_DEVICES
 #endif
 
 #if defined(NDEBUG) && defined(__CUDACC__)
-	#ifdef _MSVC_LANG
-		#define WHACK_INLINE __forceinline
-	#else
-		#define WHACK_INLINE __forceinline__
-	#endif
+    #ifdef _MSVC_LANG
+        #define WHACK_INLINE __forceinline
+    #else
+        #define WHACK_INLINE __forceinline__
+    #endif
 #else
-	#define WHACK_INLINE
+    #define WHACK_INLINE
 #endif
 
 #define WHACK_DEVICES_INLINE WHACK_DEVICES WHACK_INLINE

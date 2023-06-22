@@ -51,6 +51,7 @@ public:
 
     [[nodiscard]] thrust::host_vector<T>& host_vector()
     {
+        assert(m_device == ComputeDevice::CPU);
         auto* memory_vector = std::any_cast<thrust::host_vector<T>>(&m_memory);
         assert(memory_vector != nullptr);
         return *memory_vector;
@@ -58,6 +59,7 @@ public:
 
     [[nodiscard]] thrust::device_vector<T>& device_vector()
     {
+        assert(m_device == ComputeDevice::CUDA);
         auto* memory_vector = std::any_cast<thrust::device_vector<T>>(&m_memory);
         assert(memory_vector != nullptr);
         return *memory_vector;
