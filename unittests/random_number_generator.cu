@@ -212,6 +212,62 @@ void run_random_number_generator_2d()
     });
 }
 
+template <typename host_or_device_vector_float>
+void run_rng_state_tensor_test()
+{
+    whack::Tensor<glm::vec2, 3> rnd = compute_random_numbers_with_fixed_seed2<Config>();
+
+    static_assert(std::is_constructible_v<thrust::host_vector<float>, thrust::host_vector<float>>);
+    static_assert(std::is_constructible_v<thrust::host_vector<float>, thrust::device_vector<float>>);
+    //    std::cout << rnd << std::endl;
+
+    thrust::host_vector<glm::vec2> host_vector = rnd.host_copy().host_vector();
+    std::vector<glm::vec2> std_vec;
+    std_vec.resize(host_vector.size());
+    thrust::copy(host_vector.begin(), host_vector.end(), std_vec.begin());
+
+    REQUIRE(host_vector.size() == n_batches * 16 * 1024);
+
+    // mean
+    const auto means = thrust::reduce(host_vector.begin(), host_vector.end(), glm::vec2(0.0f), thrust::plus<glm::vec2>()) / glm::vec2(host_vector.size(), host_vector.size());
+    const auto two_standard_deviations = 2.f / std::sqrt(float(host_vector.size()));
+    CHECK(std::abs(means.x) < two_standard_deviations);
+    CHECK(std::abs(means.y) < two_standard_deviations);
+
+    // var
+    const auto sqr = [](glm::vec2 v) { return v * v; };
+    const auto variances = thrust::reduce(
+                               thrust::make_transform_iterator(host_vector.begin(), sqr),
+                               thrust::make_transform_iterator(host_vector.end(), sqr),
+                               glm::vec2(0, 0), thrust::plus<glm::vec2>())
+        / glm::vec2(host_vector.size(), host_vector.size());
+    CHECK(variances.x == Catch::Approx(1.0).scale(2).epsilon(0.01));
+    CHECK(variances.y == Catch::Approx(1.0).scale(2).epsilon(0.01));
+
+    // cov
+    const auto cov_comp = [](glm::vec2 v) { return v.x * v.y; };
+    auto cov = thrust::reduce(
+                   thrust::make_transform_iterator(host_vector.begin(), cov_comp),
+                   thrust::make_transform_iterator(host_vector.end(), cov_comp),
+                   0.f, thrust::plus<float>())
+        / float(host_vector.size());
+    CHECK(cov == Catch::Approx(0.0).scale(2).epsilon(0.01));
+
+    // equality when sampling a second time
+    whack::Tensor<glm::vec2, 3> rnd2 = compute_random_numbers_with_fixed_seed2<Config>();
+
+    const auto rnd_v = rnd.view();
+    const auto rnd2_v = rnd2.view();
+    whack::start_parallel(rnd2.device(), dim3(32, 16, n_batches), dim3(32, 1, 1), [=] __host__ __device__(const dim3&, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
+        const unsigned idX = gpe_blockIdx.x * gpe_blockDim.x + gpe_threadIdx.x;
+        const unsigned idY = gpe_blockIdx.y * gpe_blockDim.y + gpe_threadIdx.y;
+        const unsigned idZ = gpe_blockIdx.z * gpe_blockDim.z + gpe_threadIdx.z;
+        (void)idX;
+        (void)idY;
+        (void)idZ;
+        assert(rnd_v(idZ, idY, idX) == rnd2_v(idZ, idY, idX));
+    });
+}
 
 }
 
