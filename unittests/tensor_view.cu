@@ -30,6 +30,8 @@
 #include "whack/TensorView.h"
 #include "whack/kernel.h"
 
+#define WHACK_UNUSED_THREAD_INDICES WHACK_UNUSED(whack_gridDim) WHACK_UNUSED(whack_blockDim) WHACK_UNUSED(whack_blockIdx) WHACK_UNUSED(whack_threadIdx)
+
 void tensor_view_cuda_read_write_multi_dim_cuda()
 {
     const thrust::device_vector<int> tensor_1 = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
@@ -41,9 +43,11 @@ void tensor_view_cuda_read_write_multi_dim_cuda()
 
     dim3 dimBlock = dim3(2, 3, 2);
     dim3 dimGrid = dim3(1, 1, 1);
-    whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [tensor_1_view, tensor_2_view] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3& gpe_threadIdx) mutable {
-        tensor_2_view(0u, gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z) = tensor_1_view(0u, gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z) * 2;
-    });
+    whack::start_parallel(
+        whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view) {
+            WHACK_UNUSED_THREAD_INDICES
+            tensor_2_view(0u, whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z) = tensor_1_view(0u, whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z) * 2;
+        });
 
     thrust::host_vector<int> host_v(tensor_2);
     REQUIRE(host_v.size() == 12);
@@ -63,9 +67,11 @@ void tensor_view_cuda_read_write_multi_dim_cpu()
 
     dim3 dimBlock = dim3(2, 3, 2);
     dim3 dimGrid = dim3(1, 1, 1);
-    whack::start_parallel(whack::ComputeDevice::CPU, dimGrid, dimBlock, [tensor_1_view, tensor_2_view] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3 & gpe_threadIdx) mutable {
-        tensor_2_view(0u, gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z) = tensor_1_view(0u, gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z) * 2;
-    });
+    whack::start_parallel(
+        whack::ComputeDevice::CPU, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view) {
+            WHACK_UNUSED_THREAD_INDICES
+            tensor_2_view(0u, whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z) = tensor_1_view(0u, whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z) * 2;
+        });
 
     thrust::host_vector<int> host_v(tensor_2);
     REQUIRE(host_v.size() == 12);
@@ -77,9 +83,9 @@ void tensor_view_cuda_read_write_multi_dim_cpu()
 template <typename IndexCalculationType>
 void tensor_view_cuda_benchmark_read_write_multi_dim_cuda()
 {
-    auto batch_dim = 5000;
-    auto thread_dim = 512;
-    auto vector_dim = 256;
+    auto batch_dim = 5000u;
+    auto thread_dim = 512u;
+    auto vector_dim = 256u;
     thrust::device_vector<int> tensor_1(batch_dim * thread_dim * vector_dim);
     thrust::device_vector<float> tensor_2(batch_dim * thread_dim);
     thrust::sequence(tensor_1.begin(), tensor_1.end());
@@ -95,19 +101,21 @@ void tensor_view_cuda_benchmark_read_write_multi_dim_cuda()
     BENCHMARK("tensor api")
     {
         const auto nvtx_range = nvtxRangeStart("tensor_api");
-        whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [tensor_1_view, tensor_2_view, batch_dim, thread_dim, vector_dim] __host__ __device__(const dim3&, const dim3&, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
-            const auto batch_id = gpe_blockIdx.y;
-            const auto thread_id = gpe_threadIdx.x;
-            float tmp = 0;
-            for (unsigned i = 0; i < vector_dim; ++i) {
-                tmp += tensor_1_view(batch_id, i, thread_id) / float(batch_dim * thread_dim * vector_dim);
-                const auto i_l = i - unsigned(i > 0);
-                tmp -= tensor_1_view(batch_id, i_l, thread_id);
-                const auto i_h = i + unsigned(i < (vector_dim - 1));
-                tmp += tensor_1_view(batch_id, i_h, thread_id);
-            }
-            tensor_2_view(batch_id, thread_id) = tmp;
-        });
+        whack::start_parallel(
+            whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view, batch_dim, thread_dim, vector_dim) {
+                WHACK_UNUSED_THREAD_INDICES
+                const auto batch_id = whack_blockIdx.y;
+                const auto thread_id = whack_threadIdx.x;
+                float tmp = 0;
+                for (unsigned i = 0; i < vector_dim; ++i) {
+                    tmp += tensor_1_view(batch_id, i, thread_id) / float(batch_dim * thread_dim * vector_dim);
+                    const auto i_l = i - unsigned(i > 0);
+                    tmp -= tensor_1_view(batch_id, i_l, thread_id);
+                    const auto i_h = i + unsigned(i < (vector_dim - 1));
+                    tmp += tensor_1_view(batch_id, i_h, thread_id);
+                }
+                tensor_2_view(batch_id, thread_id) = tmp;
+            });
         nvtxRangeEnd(nvtx_range);
         cudaDeviceSynchronize(); // sync not needed, because the kernels depend on each other.
     };
@@ -118,19 +126,21 @@ void tensor_view_cuda_benchmark_read_write_multi_dim_cuda()
         const auto nvtx_range = nvtxRangeStart("manual_api");
         int* tensor_1_ptr = thrust::raw_pointer_cast(tensor_1.data());
         float* tensor_2_ptr = thrust::raw_pointer_cast(tensor_2.data());
-        whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [tensor_1_ptr, tensor_2_ptr, batch_dim, thread_dim, vector_dim] __host__ __device__(const dim3&, const dim3&, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
-            const auto batch_id = gpe_blockIdx.y;
-            const auto thread_id = gpe_threadIdx.x;
-            float tmp = 0;
-            for (unsigned i = 0; i < vector_dim; ++i) {
-                tmp += *(tensor_1_ptr + (IndexCalculationType(batch_id) * thread_dim * vector_dim + i * thread_dim + thread_id)) / float(batch_dim * thread_dim * vector_dim);
-                const auto i_l = i - unsigned(i > 0);
-                tmp -= *(tensor_1_ptr + (IndexCalculationType(batch_id) * thread_dim * vector_dim + i_l * thread_dim + thread_id));
-                const auto i_h = i + unsigned(i < (vector_dim - 1));
-                tmp += *(tensor_1_ptr + (IndexCalculationType(batch_id) * thread_dim * vector_dim + i_h * thread_dim + thread_id));
-            }
-            *(tensor_2_ptr + (IndexCalculationType(batch_id) * thread_dim + thread_id)) = tmp;
-        });
+        whack::start_parallel(
+            whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_ptr, tensor_2_ptr, batch_dim, thread_dim, vector_dim) {
+                WHACK_UNUSED_THREAD_INDICES
+                const auto batch_id = whack_blockIdx.y;
+                const auto thread_id = whack_threadIdx.x;
+                float tmp = 0;
+                for (unsigned i = 0; i < vector_dim; ++i) {
+                    tmp += *(tensor_1_ptr + (IndexCalculationType(batch_id) * thread_dim * vector_dim + i * thread_dim + thread_id)) / float(batch_dim * thread_dim * vector_dim);
+                    const auto i_l = i - unsigned(i > 0);
+                    tmp -= *(tensor_1_ptr + (IndexCalculationType(batch_id) * thread_dim * vector_dim + i_l * thread_dim + thread_id));
+                    const auto i_h = i + unsigned(i < (vector_dim - 1));
+                    tmp += *(tensor_1_ptr + (IndexCalculationType(batch_id) * thread_dim * vector_dim + i_h * thread_dim + thread_id));
+                }
+                *(tensor_2_ptr + (IndexCalculationType(batch_id) * thread_dim + thread_id)) = tmp;
+            });
         nvtxRangeEnd(nvtx_range);
         cudaDeviceSynchronize(); // sync not needed, because the kernels depend on each other.
     };

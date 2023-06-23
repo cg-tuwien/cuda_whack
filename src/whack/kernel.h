@@ -22,6 +22,9 @@
 #include "enums.h"
 #include "indexing.h"
 
+#define WHACK_KERNEL(...) [__VA_ARGS__] __host__ __device__(const dim3& whack_gridDim, const dim3& whack_blockDim, const dim3& whack_blockIdx, const dim3& whack_threadIdx) mutable
+#define WHACK_UNUSED(x) (void)(x);
+
 namespace whack {
 namespace detail {
 

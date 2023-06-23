@@ -23,12 +23,14 @@
 
 #include "whack/kernel.h"
 
+#define WHACK_UNUSED_THREAD_INDICES WHACK_UNUSED(whack_gridDim) WHACK_UNUSED(whack_blockDim) WHACK_UNUSED(whack_blockIdx) WHACK_UNUSED(whack_threadIdx)
+
 // windows is only happy, if the enclosing function of a host device lambda has external linkage
 
 void kernel_starter_interface() {
     dim3 dimBlock = dim3(1, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
-    whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3&) {});
+    whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL() { WHACK_UNUSED_THREAD_INDICES });
 }
 
 void kernel_starter_start_on_cuda() {
@@ -36,11 +38,13 @@ void kernel_starter_start_on_cuda() {
     int* v_ptr = thrust::raw_pointer_cast(v.data());
     dim3 dimBlock = dim3(32, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
-    whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [v_ptr] __host__ __device__(const dim3 & gpe_gridDim, const dim3 & gpe_blockDim, const dim3 & gpe_blockIdx, const dim3 & gpe_threadIdx) {
-        if (gpe_threadIdx.x >= 16)
-            return;
-        v_ptr[gpe_threadIdx.x] = gpe_threadIdx.x;
-    });
+    whack::start_parallel(
+        whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL(v_ptr) {
+            WHACK_UNUSED_THREAD_INDICES
+            if (whack_threadIdx.x >= 16)
+                return;
+            v_ptr[whack_threadIdx.x] = whack_threadIdx.x;
+        });
 
     thrust::host_vector<int> host_v(v);
     REQUIRE(host_v.size() == 16);
@@ -54,11 +58,13 @@ void kernel_starter_start_on_cpu() {
     int* v_ptr = thrust::raw_pointer_cast(v.data());
     dim3 dimBlock = dim3(32, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
-    whack::start_parallel(whack::ComputeDevice::CPU, dimGrid, dimBlock, [v_ptr] __host__ __device__(const dim3 & gpe_gridDim, const dim3 & gpe_blockDim, const dim3 & gpe_blockIdx, const dim3 & gpe_threadIdx) {
-        if (gpe_threadIdx.x >= 16)
-            return;
-        v_ptr[gpe_threadIdx.x] = gpe_threadIdx.x;
-    });
+    whack::start_parallel(
+        whack::ComputeDevice::CPU, dimGrid, dimBlock, WHACK_KERNEL(v_ptr) {
+            WHACK_UNUSED_THREAD_INDICES
+            if (whack_threadIdx.x >= 16)
+                return;
+            v_ptr[whack_threadIdx.x] = whack_threadIdx.x;
+        });
 
     REQUIRE(v.size() == 16);
     for (int i = 0; i < 16; ++i) {
