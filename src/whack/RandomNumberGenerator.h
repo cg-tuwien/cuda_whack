@@ -49,7 +49,7 @@ class CpuRandomNumberGenerator {
     std::default_random_engine m_engine;
 
 public:
-    CpuRandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
+    CpuRandomNumberGenerator(uint64_t seed = 0, uint64_t sequence_nr = 0)
         : m_engine(seed + sequence_nr)
     {
     }
