@@ -29,20 +29,44 @@ namespace {
 
 void run_rng_state_tensor_test()
 {
-    whack::Tensor<whack::CpuRNG, 1> random_number_state = whack::rng::make_host_state(1);
-    whack::TensorView<whack::CpuRNG, 1> random_number_state_view = random_number_state.view();
+    auto s1 = whack::rng::make_host_state(/*[](unsigned index) __host__ __device__ { return thrust::make_pair(0u, index); }, */ 1);
+    auto s1_view = s1.view();
+
+    whack::start_parallel(
+        s1.device(), 1, 1, WHACK_KERNEL(=) {
+            WHACK_UNUSED(whack_gridDim);
+            WHACK_UNUSED(whack_blockDim);
+            WHACK_UNUSED(whack_threadIdx);
+            WHACK_UNUSED(whack_blockIdx);
+            s1_view(0) = whack::KernelRNG(0, 0);
+        });
+
+    auto s2 = whack::rng::make_host_state(/*[](unsigned index) __host__ __device__ { return thrust::make_pair(1u, index); }, */ 1);
+    auto s2_view = s2.view();
+
+    whack::start_parallel(
+        s2.device(), 1, 1, WHACK_KERNEL(=) {
+            WHACK_UNUSED(whack_gridDim);
+            WHACK_UNUSED(whack_blockDim);
+            WHACK_UNUSED(whack_threadIdx);
+            WHACK_UNUSED(whack_blockIdx);
+            s2_view(0) = whack::KernelRNG(10, 0);
+        });
+
     auto result = whack::make_host_tensor<float>(1000);
     auto result_view = result.view();
 
     whack::start_parallel(
-        random_number_state.device(), 1, 1, WHACK_KERNEL(random_number_state_view, result_view) {
+        s1.device(), 1, 1, WHACK_KERNEL(=) {
             WHACK_UNUSED(whack_gridDim);
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
             WHACK_UNUSED(whack_blockIdx);
 
+            assert(s1_view(0).normal() != s2_view(0).normal());
+
             for (auto i = 0u; i < 1000; ++i)
-                result_view(i) = random_number_state_view(0).normal();
+                result_view(i) = s1_view(0).normal();
         });
 
     const auto result_vector = result.host_vector();

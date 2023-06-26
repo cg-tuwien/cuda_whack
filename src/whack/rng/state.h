@@ -20,12 +20,24 @@
 
 #include "whack/RandomNumberGenerator.h"
 #include "whack/Tensor.h"
+#include "whack/kernel.h"
 
 namespace whack::rng {
 
-inline Tensor<CpuRNG, 1> make_host_state(int)
+// template <typename Functor>
+inline Tensor<CpuRNG, 1> make_host_state(/*Functor seed_and_sequence, */ int)
 {
-    return make_host_tensor<CpuRNG>(1);
+    auto t = make_host_tensor<CpuRNG>(1);
+    //    auto v = t.view();
+    //    whack::start_parallel(
+    //        t.device(), 1, 1, WHACK_KERNEL(=) {
+    //            unsigned index = whack_threadIdx.x;
+    //            uint64_t seed;
+    //            uint64_t sequence_nr;
+    //            thrust::tie(seed, sequence_nr) = seed_and_sequence(index);
+    //            v(index) = CpuRNG(seed, sequence_nr);
+    //        });
+    return t;
 }
 
 }
