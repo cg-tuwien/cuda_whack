@@ -50,8 +50,10 @@ class CpuRandomNumberGenerator {
 
 public:
     CpuRandomNumberGenerator(uint64_t seed = 0, uint64_t sequence_nr = 0)
-        : m_engine(seed + sequence_nr)
+        : m_engine((seed + 47616198) * 5687969629871 + sequence_nr)
     {
+        // std::default_random_engine seeded with 0 or one results in the same random sequence
+        // should be enough to just add one, but let's just shuffle a bit more for good measure.
     }
     scalar_t normal()
     {
