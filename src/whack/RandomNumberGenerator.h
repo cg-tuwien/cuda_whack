@@ -84,15 +84,18 @@ using GpuRNGFastInit = GpuRandomNumberGenerator<float, curandStatePhilox4_32_10_
 // warning using nvcc
 #ifdef __CUDA_ARCH__
 // device code trajectory
+using KernelRNG = GpuRNGFastGeneration;
 using KernelRNGFastGeneration  = GpuRNGFastGeneration;
 using KernelRNGFastInit  = GpuRNGFastInit;
 #else
 // nvcc host code trajectory
+using KernelRNG = CpuRNG;
 using KernelRNGFastGeneration  = CpuRNG;
 using KernelRNGFastInit  = CpuRNG;
 #endif
 #else
 // non-nvcc code trajectory
+using KernelRNG = CpuRNG;
 using KernelRNGFastGeneration  = CpuRNG;
 using KernelRNGFastInit  = CpuRNG;
 #endif
