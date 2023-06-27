@@ -46,7 +46,7 @@ public:
 
 template <typename scalar_t, typename Unused = void>
 class CpuRandomNumberGenerator {
-    std::default_random_engine m_engine;
+    std::mt19937_64 m_engine;
 
 public:
     CpuRandomNumberGenerator(uint64_t seed = 0, uint64_t sequence_nr = 0)
