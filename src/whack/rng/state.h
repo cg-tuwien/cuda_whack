@@ -18,16 +18,102 @@
 
 #pragma once
 
+#include <variant>
+
 #include "whack/RandomNumberGenerator.h"
 #include "whack/Tensor.h"
 #include "whack/kernel.h"
 
 namespace whack::rng {
 
+struct FastGenerationType;
+struct FastInitType;
+
+namespace {
+    struct UnderlyingRngStateDummy;
+}
+
+template <typename RngType, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
+class StateTensorView : TensorView<UnderlyingRngStateDummy, n_dims, IndexStoreType, IndexCalculateType> {
+
+    using Index = whack::Array<IndexStoreType, n_dims>;
+
+public:
+    WHACK_DEVICES_INLINE
+    StateTensorView(UnderlyingRngStateDummy* data, const Index& dimensions)
+        : TensorView<UnderlyingRngStateDummy, n_dims, IndexStoreType, IndexCalculateType>(data, dimensions)
+    {
+    }
+
+    template <typename U = RngType, typename... IndexTypes>
+    WHACK_DEVICES_INLINE typename std::enable_if<std::is_same<U, FastInitType>::value, const KernelRNGFastInit&>::type operator()(const IndexTypes&... indices) const
+    {
+        return reinterpret_cast<const TensorView<KernelRNGFastInit, n_dims, IndexStoreType, IndexCalculateType>*>(this)->operator()(indices...);
+    }
+
+    template <typename U = RngType, typename... IndexTypes>
+    WHACK_DEVICES_INLINE typename std::enable_if<std::is_same<U, FastInitType>::value, KernelRNGFastInit&>::type operator()(const IndexTypes&... indices)
+    {
+        return reinterpret_cast<TensorView<KernelRNGFastInit, n_dims, IndexStoreType, IndexCalculateType>*>(this)->operator()(indices...);
+    }
+
+    template <typename U = RngType, typename... IndexTypes>
+    WHACK_DEVICES_INLINE typename std::enable_if<std::is_same<U, FastGenerationType>::value, const KernelRNGFastInit&>::type operator()(const IndexTypes&... indices) const
+    {
+        return reinterpret_cast<const TensorView<KernelRNGFastGeneration, n_dims, IndexStoreType, IndexCalculateType>*>(this)->operator()(indices...);
+    }
+
+    template <typename U = RngType, typename... IndexTypes>
+    WHACK_DEVICES_INLINE typename std::enable_if<std::is_same<U, FastGenerationType>::value, KernelRNGFastGeneration&>::type operator()(const IndexTypes&... indices)
+    {
+        return reinterpret_cast<TensorView<KernelRNGFastGeneration, n_dims, IndexStoreType, IndexCalculateType>*>(this)->operator()(indices...);
+    }
+};
+
+template <typename RngType, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
+class StateTensor {
+    template <typename RngState>
+    using UnderlyingTensor = Tensor<RngState, n_dims, IndexStoreType, IndexCalculateType>;
+    using Dimensions = whack::Array<IndexStoreType, n_dims>;
+
+    std::variant<UnderlyingTensor<CpuRNG>, UnderlyingTensor<GpuRNGFastGeneration>, UnderlyingTensor<GpuRNGFastInit>> m_tensor;
+
+public:
+    template <typename T>
+    StateTensor(UnderlyingTensor<T> t)
+        : m_tensor(std::move(t))
+    {
+    }
+
+    ComputeDevice device() const
+    {
+        return std::visit([](const auto& tensor) { return tensor.device(); }, m_tensor);
+    }
+
+    UnderlyingRngStateDummy* raw_pointer()
+    {
+        return std::visit([](auto& tensor) -> UnderlyingRngStateDummy* { return reinterpret_cast<UnderlyingRngStateDummy*>(tensor.raw_pointer()); }, m_tensor);
+    }
+
+    Dimensions dimensions() const
+    {
+        return std::visit([](const auto& tensor) { return tensor.dimensions(); }, m_tensor);
+    }
+
+    StateTensorView<RngType, n_dims, IndexStoreType, IndexCalculateType> view()
+    {
+        const auto ptr = raw_pointer();
+        const auto dims = dimensions();
+        return StateTensorView<RngType, n_dims, IndexStoreType, IndexCalculateType>(ptr, dims);
+    }
+};
+
 // template <typename Functor>
-inline Tensor<CpuRNG, 1> make_host_state(/*Functor seed_and_sequence, */ int)
+inline StateTensor<FastGenerationType, 1> make_host_state(/*Functor seed_and_sequence, */ int)
 {
     auto t = make_host_tensor<CpuRNG>(1);
+    using TensorType = decltype(t);
+    auto st = StateTensor<FastGenerationType, TensorType::n_dims_value, TensorType::index_store_type, TensorType::index_calculate_type>(t);
     //    auto v = t.view();
     //    whack::start_parallel(
     //        t.device(), 1, 1, WHACK_KERNEL(=) {
@@ -37,7 +123,7 @@ inline Tensor<CpuRNG, 1> make_host_state(/*Functor seed_and_sequence, */ int)
     //            thrust::tie(seed, sequence_nr) = seed_and_sequence(index);
     //            v(index) = CpuRNG(seed, sequence_nr);
     //        });
-    return t;
+    return st;
 }
 
 }

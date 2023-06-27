@@ -32,6 +32,12 @@ namespace whack {
  */
 template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 class Tensor {
+public:
+    static constexpr uint32_t n_dims_value = n_dims;
+    using index_store_type = IndexStoreType;
+    using index_calculate_type = IndexCalculateType;
+
+private:
     std::any m_memory;
     ComputeDevice m_device = ComputeDevice::Invalid;
 
@@ -90,6 +96,30 @@ public:
 
     /// disalow calling on a temporary
     [[nodiscard]] thrust::host_vector<T>& device_vector() && = delete;
+
+    [[nodiscard]] const T* raw_pointer() const
+    {
+        switch (m_device) {
+        case ComputeDevice::CPU:
+            return thrust::raw_pointer_cast(host_vector().data());
+        case ComputeDevice::CUDA:
+            return thrust::raw_pointer_cast(device_vector().data());
+        }
+        assert(false);
+        return {};
+    }
+
+    [[nodiscard]] T* raw_pointer()
+    {
+        switch (m_device) {
+        case ComputeDevice::CPU:
+            return thrust::raw_pointer_cast(host_vector().data());
+        case ComputeDevice::CUDA:
+            return thrust::raw_pointer_cast(device_vector().data());
+        }
+        assert(false);
+        return {};
+    }
 
     [[nodiscard]] TensorView<const T, n_dims, IndexStoreType, IndexCalculateType> view() const
     {
