@@ -123,26 +123,12 @@ public:
 
     [[nodiscard]] TensorView<const T, n_dims, IndexStoreType, IndexCalculateType> view() const
     {
-        switch (m_device) {
-        case ComputeDevice::CPU:
-            return make_tensor_view(host_vector(), m_dimensions);
-        case ComputeDevice::CUDA:
-            return make_tensor_view(device_vector(), m_dimensions);
-        }
-        assert(false);
-        return {};
+        return { raw_pointer(), m_dimensions };
     }
 
     [[nodiscard]] TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view()
     {
-        switch (m_device) {
-        case ComputeDevice::CPU:
-            return make_tensor_view(host_vector(), m_dimensions);
-        case ComputeDevice::CUDA:
-            return make_tensor_view(device_vector(), m_dimensions);
-        }
-        assert(false);
-        return {};
+        return { raw_pointer(), m_dimensions };
     }
 
     [[nodiscard]] Tensor device_copy() const;
