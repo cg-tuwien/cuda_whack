@@ -17,10 +17,10 @@
  *****************************************************************************/
 
 #pragma once
-#include <any>
 #include <numeric>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <variant>
 
 #include "TensorView.h"
 #include "enums.h"
@@ -38,7 +38,7 @@ public:
     using index_calculate_type = IndexCalculateType;
 
 private:
-    std::any m_memory;
+    std::variant<thrust::host_vector<T>, thrust::device_vector<T>> m_memory;
     ComputeDevice m_device = ComputeDevice::Invalid;
 
     using Dimensions = whack::Array<IndexStoreType, n_dims>;
@@ -63,17 +63,12 @@ public:
 
     [[nodiscard]] thrust::host_vector<T>& host_vector() &
     {
-        assert(m_device == ComputeDevice::CPU);
-        auto* memory_vector = std::any_cast<thrust::host_vector<T>>(&m_memory);
-        assert(memory_vector != nullptr);
-        return *memory_vector;
+        return std::get<thrust::host_vector<T>>(m_memory);
     }
 
-    [[nodiscard]] const thrust::host_vector<T>& host_vector() const &
+    [[nodiscard]] const thrust::host_vector<T>& host_vector() const&
     {
-        auto* memory_vector = std::any_cast<thrust::host_vector<T>>(&m_memory);
-        assert(memory_vector != nullptr);
-        return *memory_vector;
+        return std::get<thrust::host_vector<T>>(m_memory);
     }
 
     /// disalow calling on a temporary
@@ -81,17 +76,12 @@ public:
 
     [[nodiscard]] thrust::device_vector<T>& device_vector() &
     {
-        assert(m_device == ComputeDevice::CUDA);
-        auto* memory_vector = std::any_cast<thrust::device_vector<T>>(&m_memory);
-        assert(memory_vector != nullptr);
-        return *memory_vector;
+        return std::get<thrust::device_vector<T>>(m_memory);
     }
 
     [[nodiscard]] const thrust::device_vector<T>& device_vector() const &
     {
-        auto* memory_vector = std::any_cast<thrust::device_vector<T>>(&m_memory);
-        assert(memory_vector != nullptr);
-        return *memory_vector;
+        return std::get<thrust::device_vector<T>>(m_memory);
     }
 
     /// disalow calling on a temporary
@@ -136,7 +126,6 @@ public:
 
     [[nodiscard]] ComputeDevice device() const { return m_device; }
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
-    [[nodiscard]] const std::any& memory() const { return m_memory; }
 };
 
 // whack::Array api
