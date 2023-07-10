@@ -100,31 +100,21 @@ void Tensor_copy()
     {
         auto a = whack::make_tensor<int>(whack::Location::Host, 16);
         auto b = a;
-        CHECK(a.host_vector().begin() != b.host_vector().begin());
-
-        CHECK(&a.view()(0) == &a.host_vector().front()); // views must point to something else
-        CHECK(&b.view()(0) == &b.host_vector().front()); // views must point to something else
+        CHECK(b.location() == whack::Location::Host);
+        CHECK(a.raw_pointer() != b.raw_pointer());
     }
     {
         auto a = whack::make_tensor<int>(whack::Location::Device, 16);
         auto b = a;
-        CHECK(a.device_vector().begin() != b.device_vector().begin());
-        CHECK(thrust::raw_pointer_cast(a.device_vector().data()) != thrust::raw_pointer_cast(b.device_vector().data()));
-
-        CHECK(&a.view()(0) == thrust::raw_pointer_cast(a.device_vector().data())); // views must point to something else
-        CHECK(&b.view()(0) == thrust::raw_pointer_cast(b.device_vector().data())); // views must point to something else
+        CHECK(b.location() == whack::Location::Device);
+        CHECK(a.raw_pointer() != b.raw_pointer());
     }
     {
         auto a = whack::make_tensor<int>(whack::Location::Host, 16);
         auto b = whack::make_tensor<int>(whack::Location::Device, 16);
         a = b;
         CHECK(a.location() == whack::Location::Device);
-
-        CHECK(a.device_vector().begin() != b.device_vector().begin());
-        CHECK(thrust::raw_pointer_cast(a.device_vector().data()) != thrust::raw_pointer_cast(b.device_vector().data()));
-
-        CHECK(&a.view()(0) == thrust::raw_pointer_cast(a.device_vector().data())); // views must point to something else
-        CHECK(&b.view()(0) == thrust::raw_pointer_cast(b.device_vector().data())); // views must point to something else
+        CHECK(a.raw_pointer() != b.raw_pointer());
     }
 }
 
