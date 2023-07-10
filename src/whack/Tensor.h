@@ -51,24 +51,32 @@ public:
         , m_dimensions(dimensions)
         , m_device(Location::Host)
     {
-        assert(memory.size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(0), std::multiplies<IndexCalculateType>()));
+        assert(host_vector().size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(1), std::multiplies<IndexCalculateType>()));
     }
     Tensor(thrust::device_vector<T>&& memory, const Dimensions& dimensions)
         : m_memory(std::move(memory))
         , m_dimensions(dimensions)
         , m_device(Location::Device)
     {
-        assert(memory.size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(0), std::multiplies<IndexCalculateType>()));
+        assert(device_vector().size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(1), std::multiplies<IndexCalculateType>()));
     }
 
     [[nodiscard]] thrust::host_vector<T>& host_vector() &
     {
-        return std::get<thrust::host_vector<T>>(m_memory);
+        try {
+            return std::get<thrust::host_vector<T>>(m_memory);
+        } catch (...) {
+            throw std::logic_error("whack::Tensor::host_vector() called on a tensor that is not on the host!");
+        }
     }
 
     [[nodiscard]] const thrust::host_vector<T>& host_vector() const&
     {
-        return std::get<thrust::host_vector<T>>(m_memory);
+        try {
+            return std::get<thrust::host_vector<T>>(m_memory);
+        } catch (...) {
+            throw std::logic_error("whack::Tensor::host_vector() called on a tensor that is not on the host!");
+        }
     }
 
     /// disalow calling on a temporary
@@ -76,12 +84,20 @@ public:
 
     [[nodiscard]] thrust::device_vector<T>& device_vector() &
     {
-        return std::get<thrust::device_vector<T>>(m_memory);
+        try {
+            return std::get<thrust::device_vector<T>>(m_memory);
+        } catch (...) {
+            throw std::logic_error("whack::Tensor::device_vector() called on a tensor that is not on the device!");
+        }
     }
 
     [[nodiscard]] const thrust::device_vector<T>& device_vector() const &
     {
-        return std::get<thrust::device_vector<T>>(m_memory);
+        try {
+            return std::get<thrust::device_vector<T>>(m_memory);
+        } catch (...) {
+            throw std::logic_error("whack::Tensor::device_vector() called on a tensor that is not on the device!");
+        }
     }
 
     /// disalow calling on a temporary
@@ -94,9 +110,11 @@ public:
             return thrust::raw_pointer_cast(host_vector().data());
         case Location::Device:
             return thrust::raw_pointer_cast(device_vector().data());
+        case Location::Invalid:
+            return nullptr;
         }
         assert(false);
-        return {};
+        return nullptr;
     }
 
     [[nodiscard]] T* raw_pointer()
@@ -106,9 +124,11 @@ public:
             return thrust::raw_pointer_cast(host_vector().data());
         case Location::Device:
             return thrust::raw_pointer_cast(device_vector().data());
+        case Location::Invalid:
+            return nullptr;
         }
         assert(false);
-        return {};
+        return nullptr;
     }
 
     [[nodiscard]] TensorView<const T, n_dims, IndexStoreType, IndexCalculateType> view() const
