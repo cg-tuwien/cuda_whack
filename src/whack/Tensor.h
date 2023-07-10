@@ -124,7 +124,7 @@ public:
     [[nodiscard]] Tensor device_copy() const;
     [[nodiscard]] Tensor host_copy() const;
 
-    [[nodiscard]] Location device() const { return m_device; }
+    [[nodiscard]] Location location() const { return m_device; }
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
 };
 

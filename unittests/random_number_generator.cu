@@ -70,7 +70,7 @@ whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed()
     auto view = retval.view();
 
     whack::start_parallel(
-        retval.device(), dimGrid, dimBlock, WHACK_KERNEL(=) {
+        retval.location(), dimGrid, dimBlock, WHACK_KERNEL(=) {
             const auto sequence_nr = whack::join_n_dim_index<uint64_t, 6, unsigned>(
                 { whack_blockDim.x, whack_blockDim.y, whack_blockDim.z, whack_gridDim.x, whack_gridDim.y, whack_gridDim.z },
                 { whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z, whack_blockIdx.x, whack_blockIdx.y, whack_blockIdx.z });
@@ -115,7 +115,7 @@ void run_random_number_generator_1d()
     const auto rnd_v = rnd.view();
     const auto rnd2_v = rnd2.view();
     whack::start_parallel(
-        rnd2.device(), dim3(32, 16, n_batches), dim3(32, 1, 1), WHACK_KERNEL(=) {
+        rnd2.location(), dim3(32, 16, n_batches), dim3(32, 1, 1), WHACK_KERNEL(=) {
             const unsigned idX = whack_blockIdx.x * whack_blockDim.x + whack_threadIdx.x;
             const unsigned idY = whack_blockIdx.y * whack_blockDim.y + whack_threadIdx.y;
             const unsigned idZ = whack_blockIdx.z * whack_blockDim.z + whack_threadIdx.z;
@@ -129,20 +129,16 @@ template <typename Config>
 whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2()
 {
     using RNG = typename Config::RNG;
+    const whack::Location location = Config::enable_cuda::value ? whack::Location::Device : whack::Location::Host;
 
-    whack::Tensor<glm::vec2, 3> retval;
-    if (Config::enable_cuda::value) {
-        retval = whack::make_device_tensor<glm::vec2>(n_batches, 16, 1024);
-    } else {
-        retval = whack::make_host_tensor<glm::vec2>(n_batches, 16, 1024);
-    }
+    auto retval = whack::make_tensor<glm::vec2>(location, n_batches, 16, 1024);
 
     dim3 dimBlock = dim3(32, 4, 1);
     dim3 dimGrid = dim3(1, 4, n_batches);
     auto view = retval.view();
 
     whack::start_parallel(
-        retval.device(), dimGrid, dimBlock, WHACK_KERNEL(=) {
+        retval.location(), dimGrid, dimBlock, WHACK_KERNEL(=) {
             const auto sequence_nr = whack::join_n_dim_index<uint64_t, 6, unsigned>(
                 { whack_blockDim.x, whack_blockDim.y, whack_blockDim.z, whack_gridDim.x, whack_gridDim.y, whack_gridDim.z },
                 { whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z, whack_blockIdx.x, whack_blockIdx.y, whack_blockIdx.z });
@@ -205,7 +201,7 @@ void run_random_number_generator_2d()
     const auto rnd_v = rnd.view();
     const auto rnd2_v = rnd2.view();
     whack::start_parallel(
-        rnd2.device(), dim3(32, 16, n_batches), dim3(32, 1, 1), WHACK_KERNEL(=) {
+        rnd2.location(), dim3(32, 16, n_batches), dim3(32, 1, 1), WHACK_KERNEL(=) {
             const unsigned idX = whack_blockIdx.x * whack_blockDim.x + whack_threadIdx.x;
             const unsigned idY = whack_blockIdx.y * whack_blockDim.y + whack_threadIdx.y;
             const unsigned idZ = whack_blockIdx.z * whack_blockDim.z + whack_threadIdx.z;

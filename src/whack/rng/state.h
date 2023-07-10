@@ -85,9 +85,9 @@ public:
     {
     }
 
-    Location device() const
+    Location location() const
     {
-        return std::visit([](const auto& tensor) { return tensor.device(); }, m_tensor);
+        return std::visit([](const auto& tensor) { return tensor.location(); }, m_tensor);
     }
 
     UnderlyingRngStateDummy* raw_pointer()
@@ -108,22 +108,16 @@ public:
     }
 };
 
-// template <typename Functor>
-inline StateTensor<FastGenerationType, 1> make_host_state(/*Functor seed_and_sequence, */ int)
+inline StateTensor<FastGenerationType, 1> make_state(whack::Location location, int)
 {
-    auto t = make_tensor<CpuRNG>(whack::Location::Host, 1);
+    auto t = make_tensor<CpuRNG>(location, 1);
     using TensorType = decltype(t);
     auto st = StateTensor<FastGenerationType, TensorType::n_dims_value, TensorType::index_store_type, TensorType::index_calculate_type>(t);
-    //    auto v = t.view();
-    //    whack::start_parallel(
-    //        t.device(), 1, 1, WHACK_KERNEL(=) {
-    //            unsigned index = whack_threadIdx.x;
-    //            uint64_t seed;
-    //            uint64_t sequence_nr;
-    //            thrust::tie(seed, sequence_nr) = seed_and_sequence(index);
-    //            v(index) = CpuRNG(seed, sequence_nr);
-    //        });
     return st;
 }
 
+inline StateTensor<FastGenerationType, 1> make_host_state(/*Functor seed_and_sequence, */ int)
+{
+    return make_state(whack::Location::Host, 1);
+}
 }

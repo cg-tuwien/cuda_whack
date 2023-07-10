@@ -39,7 +39,7 @@ whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2()
     dim3 dimGrid = dim3(1, 4, n_batches);
     auto view = retval.view();
 
-    whack::start_parallel(retval.device(), dimGrid, dimBlock, [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
+    whack::start_parallel(retval.location(), dimGrid, dimBlock, [=] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) mutable {
         const auto sequence_nr = whack::join_n_dim_index<uint64_t, 6, unsigned>(
             { gpe_blockDim.x, gpe_blockDim.y, gpe_blockDim.z, gpe_gridDim.x, gpe_gridDim.y, gpe_gridDim.z },
             { gpe_threadIdx.x, gpe_threadIdx.y, gpe_threadIdx.z, gpe_blockIdx.x, gpe_blockIdx.y, gpe_blockIdx.z });

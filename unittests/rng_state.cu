@@ -33,7 +33,7 @@ void run_rng_state_tensor_test()
     auto s1_view = s1.view();
 
     whack::start_parallel(
-        s1.device(), 1, 1, WHACK_KERNEL(=) {
+        s1.location(), 1, 1, WHACK_KERNEL(=) {
             WHACK_UNUSED(whack_gridDim);
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
@@ -45,7 +45,7 @@ void run_rng_state_tensor_test()
     auto s2_view = s2.view();
 
     whack::start_parallel(
-        s2.device(), 1, 1, WHACK_KERNEL(=) {
+        s2.location(), 1, 1, WHACK_KERNEL(=) {
             WHACK_UNUSED(whack_gridDim);
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
@@ -57,7 +57,7 @@ void run_rng_state_tensor_test()
     auto result_view = result.view();
 
     whack::start_parallel(
-        s1.device(), 1, 1, WHACK_KERNEL(=) {
+        s1.location(), 1, 1, WHACK_KERNEL(=) {
             WHACK_UNUSED(whack_gridDim);
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
