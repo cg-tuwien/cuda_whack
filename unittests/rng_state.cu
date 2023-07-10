@@ -29,7 +29,7 @@ namespace {
 
 void run_rng_state_tensor_test()
 {
-    auto s1 = whack::rng::make_host_state(/*[](unsigned index) __host__ __device__ { return thrust::make_pair(0u, index); }, */ 1);
+    auto s1 = whack::rng::make_host_state(1);
     auto s1_view = s1.view();
 
     whack::start_parallel(
@@ -41,7 +41,7 @@ void run_rng_state_tensor_test()
             s1_view(0) = whack::KernelRNG(0, 0);
         });
 
-    auto s2 = whack::rng::make_host_state(/*[](unsigned index) __host__ __device__ { return thrust::make_pair(1u, index); }, */ 1);
+    auto s2 = whack::rng::make_host_state(1);
     auto s2_view = s2.view();
 
     whack::start_parallel(
@@ -76,7 +76,7 @@ void run_rng_state_tensor_test()
 }
 }
 
-TEST_CASE("rng_state: api", "")
+TEST_CASE("rng_state: api")
 {
     run_rng_state_tensor_test();
 }

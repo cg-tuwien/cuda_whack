@@ -44,17 +44,14 @@ TEST_CASE("random_number_generator.cu: (single threaded)")
 namespace {
 struct ConfigCudaFastGen {
     using enable_cuda = std::true_type;
-    //    using RNG = whack::GpuRNGFastGeneration;
     using RNG = whack::KernelRNGFastGeneration;
 };
 struct ConfigCudaFastOffset {
     using enable_cuda = std::true_type;
-    //    using RNG = whack::GpuRNGFastInit;
     using RNG = whack::KernelRNGFastInit;
 };
 struct ConfigCpu {
     using enable_cuda = std::false_type;
-    //    using RNG = whack::CpuRNG;
     using RNG = whack::KernelRNGFastInit;
 };
 
