@@ -27,7 +27,7 @@
 void Tensor_interface()
 {
     {
-        auto tensor = whack::make_host_tensor<int>(16);
+        auto tensor = whack::make_tensor<int>(whack::ComputeDevice::CPU, 16);
         CHECK(tensor.device() == whack::ComputeDevice::CPU);
         CHECK(tensor.host_vector().size() == 16);
         CHECK_THROWS(tensor.device_vector());
@@ -35,7 +35,7 @@ void Tensor_interface()
         CHECK(tensor.view()(0) == 42);
     }
     {
-        auto tensor = whack::make_host_tensor<int>(2, 3, 4);
+        auto tensor = whack::make_tensor<int>(whack::ComputeDevice::CPU, 2, 3, 4);
         CHECK(tensor.device() == whack::ComputeDevice::CPU);
         CHECK(tensor.host_vector().size() == 2 * 3 * 4);
         CHECK_THROWS(tensor.device_vector());
@@ -44,7 +44,7 @@ void Tensor_interface()
     }
     {
         const whack::Array<uint32_t, 1> dimensions = { 16 };
-        auto tensor = whack::make_host_tensor<int>(dimensions);
+        auto tensor = whack::make_tensor<int>(whack::ComputeDevice::CPU, dimensions);
         CHECK(tensor.device() == whack::ComputeDevice::CPU);
         CHECK(tensor.host_vector().size() == 16);
         CHECK_THROWS(tensor.device_vector());
@@ -53,7 +53,7 @@ void Tensor_interface()
     }
     {
         const whack::Array<uint32_t, 3> dimensions = { 2, 3, 4 };
-        auto tensor = whack::make_host_tensor<int>(dimensions);
+        auto tensor = whack::make_tensor<int>(whack::ComputeDevice::CPU, dimensions);
         CHECK(tensor.device() == whack::ComputeDevice::CPU);
         CHECK(tensor.host_vector().size() == 2 * 3 * 4);
         CHECK_THROWS(tensor.device_vector());
@@ -62,7 +62,7 @@ void Tensor_interface()
     }
 
     {
-        auto tensor = whack::make_device_tensor<float>(16);
+        auto tensor = whack::make_tensor<float>(whack::ComputeDevice::CUDA, 16);
         CHECK(tensor.device() == whack::ComputeDevice::CUDA);
         CHECK(tensor.device_vector().size() == 16);
         CHECK_THROWS(tensor.host_vector());
@@ -79,7 +79,7 @@ void Tensor_interface()
 
     {
         const whack::Array<uint32_t, 3> dimensions = { 2, 3, 4 };
-        auto tensor = whack::make_device_tensor<float>(dimensions);
+        auto tensor = whack::make_tensor<float>(whack::ComputeDevice::CUDA, dimensions);
         CHECK(tensor.device() == whack::ComputeDevice::CUDA);
         CHECK(tensor.device_vector().size() == 2 * 3 * 4);
         CHECK_THROWS(tensor.host_vector());
@@ -98,7 +98,7 @@ void Tensor_interface()
 void Tensor_copy()
 {
     {
-        auto a = whack::make_host_tensor<int>(16);
+        auto a = whack::make_tensor<int>(whack::ComputeDevice::CPU, 16);
         auto b = a;
         CHECK(a.host_vector().begin() != b.host_vector().begin());
 
@@ -106,7 +106,7 @@ void Tensor_copy()
         CHECK(&b.view()(0) == &b.host_vector().front()); // views must point to something else
     }
     {
-        auto a = whack::make_device_tensor<int>(16);
+        auto a = whack::make_tensor<int>(whack::ComputeDevice::CUDA, 16);
         auto b = a;
         CHECK(a.device_vector().begin() != b.device_vector().begin());
         CHECK(thrust::raw_pointer_cast(a.device_vector().data()) != thrust::raw_pointer_cast(b.device_vector().data()));
@@ -115,8 +115,8 @@ void Tensor_copy()
         CHECK(&b.view()(0) == thrust::raw_pointer_cast(b.device_vector().data())); // views must point to something else
     }
     {
-        auto a = whack::make_host_tensor<int>(16);
-        auto b = whack::make_device_tensor<int>(16);
+        auto a = whack::make_tensor<int>(whack::ComputeDevice::CPU, 16);
+        auto b = whack::make_tensor<int>(whack::ComputeDevice::CUDA, 16);
         a = b;
         CHECK(a.device() == whack::ComputeDevice::CUDA);
 
@@ -130,7 +130,7 @@ void Tensor_copy()
 
 void Tensor_copy_to_device_and_back()
 {
-    auto h1 = whack::make_host_tensor<int>(16);
+    auto h1 = whack::make_tensor<int>(whack::ComputeDevice::CPU, 16);
     h1.host_vector()[0] = 12387;
     auto d1 = h1.device_copy();
     REQUIRE(d1.device() == whack::ComputeDevice::CUDA);

@@ -128,9 +128,8 @@ public:
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
 };
 
-// whack::Array api
 template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
-Tensor<T, n_dims> make_host_tensor(const whack::Array<IndexStoreType, n_dims>& dimensions)
+Tensor<T, n_dims> make_tensor(ComputeDevice device, const whack::Array<IndexStoreType, n_dims>& dimensions)
 {
     static_assert(std::is_integral_v<IndexStoreType>);
     static_assert(std::is_integral_v<IndexCalculateType>);
@@ -141,31 +140,20 @@ Tensor<T, n_dims> make_host_tensor(const whack::Array<IndexStoreType, n_dims>& d
     IndexCalculateType size = 1;
     for (unsigned i = 0; i < n_dims; ++i)
         size *= dimensions[i];
-    thrust::host_vector<T> memory(size);
 
-    return { std::move(memory), dimensions };
+    switch (device) {
+    case ComputeDevice::CPU:
+        return { thrust::host_vector<T>(size), dimensions };
+    case ComputeDevice::CUDA:
+        return { thrust::device_vector<T>(size), dimensions };
+    case ComputeDevice::Invalid:
+        return {};
+    }
+    return {};
 }
 
-template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
-Tensor<T, n_dims> make_device_tensor(const whack::Array<IndexStoreType, n_dims>& dimensions)
-{
-    static_assert(std::is_integral_v<IndexStoreType>);
-    static_assert(std::is_integral_v<IndexCalculateType>);
-    static_assert(std::is_unsigned_v<IndexStoreType>);
-    static_assert(std::is_unsigned_v<IndexCalculateType>);
-    static_assert(std::is_move_assignable_v<thrust::device_vector<T>>, "thrust::device_vector<T> must be movable");
-
-    IndexCalculateType size = 1;
-    for (unsigned i = 0; i < n_dims; ++i)
-        size *= dimensions[i];
-    thrust::device_vector<T> memory(size);
-
-    return { std::move(memory), dimensions };
-}
-
-// parameter pack api
 template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
-Tensor<T, sizeof...(DimensionTypes)> make_host_tensor(DimensionTypes... dim)
+Tensor<T, sizeof...(DimensionTypes)> make_tensor(ComputeDevice device, DimensionTypes... dim)
 {
     static_assert(std::is_integral_v<IndexStoreType>);
     static_assert(std::is_integral_v<IndexCalculateType>);
@@ -176,32 +164,35 @@ Tensor<T, sizeof...(DimensionTypes)> make_host_tensor(DimensionTypes... dim)
     using Dimensions = whack::Array<IndexStoreType, sizeof...(DimensionTypes)>;
 
     const IndexCalculateType size = (std::make_unsigned_t<IndexCalculateType>(dim) * ...);
-    thrust::host_vector<T> memory(size);
+    const auto dimensions = Dimensions { IndexStoreType(dim)... };
 
-    return { std::move(memory), Dimensions { IndexStoreType(dim)... } };
+    switch (device) {
+    case ComputeDevice::CPU:
+        return { thrust::host_vector<T>(size), dimensions };
+    case ComputeDevice::CUDA:
+        return { thrust::device_vector<T>(size), dimensions };
+    case ComputeDevice::Invalid:
+        return {};
+    }
+    return {};
+}
+
+template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
+Tensor<T, sizeof...(DimensionTypes)> make_host_tensor(DimensionTypes... dim)
+{
+    return make_tensor<T, IndexStoreType, IndexCalculateType>(ComputeDevice::CPU, dim...);
 }
 
 template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
 Tensor<T, sizeof...(DimensionTypes)> make_device_tensor(DimensionTypes... dim)
 {
-    static_assert(std::is_integral_v<IndexStoreType>);
-    static_assert(std::is_integral_v<IndexCalculateType>);
-    static_assert(std::is_unsigned_v<IndexStoreType>);
-    static_assert(std::is_unsigned_v<IndexCalculateType>);
-    static_assert(std::is_move_assignable_v<thrust::device_vector<T>>, "thrust::device_vector<T> must be movable");
-
-    using Dimensions = whack::Array<IndexStoreType, sizeof...(DimensionTypes)>;
-
-    const IndexCalculateType size = (std::make_unsigned_t<IndexCalculateType>(dim) * ...);
-    thrust::device_vector<T> memory(size);
-
-    return { std::move(memory), Dimensions { IndexStoreType(dim)... } };
+    return make_tensor<T, IndexStoreType, IndexCalculateType>(ComputeDevice::CUDA, dim...);
 }
 
 template <typename T, uint32_t n_dims, typename IndexStoreType, typename IndexCalculateType>
 Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexStoreType, IndexCalculateType>::device_copy() const
 {
-    Tensor t = make_device_tensor<T>(m_dimensions);
+    Tensor t = make_tensor<T>(whack::ComputeDevice::CUDA, m_dimensions);
     switch (m_device) {
     case ComputeDevice::CPU:
         t.device_vector() = host_vector();
@@ -216,7 +207,7 @@ Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexSto
 template <typename T, uint32_t n_dims, typename IndexStoreType, typename IndexCalculateType>
 Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexStoreType, IndexCalculateType>::host_copy() const
 {
-    Tensor t = make_host_tensor<T>(m_dimensions);
+    Tensor t = make_tensor<T>(whack::ComputeDevice::CPU, m_dimensions);
     switch (m_device) {
     case ComputeDevice::CPU:
         t.host_vector() = host_vector();
