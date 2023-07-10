@@ -27,16 +27,16 @@
 void Tensor_interface()
 {
     {
-        auto tensor = whack::make_tensor<int>(whack::ComputeDevice::CPU, 16);
-        CHECK(tensor.device() == whack::ComputeDevice::CPU);
+        auto tensor = whack::make_tensor<int>(whack::Location::Host, 16);
+        CHECK(tensor.device() == whack::Location::Host);
         CHECK(tensor.host_vector().size() == 16);
         CHECK_THROWS(tensor.device_vector());
         tensor.view()(0) = 42;
         CHECK(tensor.view()(0) == 42);
     }
     {
-        auto tensor = whack::make_tensor<int>(whack::ComputeDevice::CPU, 2, 3, 4);
-        CHECK(tensor.device() == whack::ComputeDevice::CPU);
+        auto tensor = whack::make_tensor<int>(whack::Location::Host, 2, 3, 4);
+        CHECK(tensor.device() == whack::Location::Host);
         CHECK(tensor.host_vector().size() == 2 * 3 * 4);
         CHECK_THROWS(tensor.device_vector());
         tensor.view()(0, 0, 0) = 42;
@@ -44,8 +44,8 @@ void Tensor_interface()
     }
     {
         const whack::Array<uint32_t, 1> dimensions = { 16 };
-        auto tensor = whack::make_tensor<int>(whack::ComputeDevice::CPU, dimensions);
-        CHECK(tensor.device() == whack::ComputeDevice::CPU);
+        auto tensor = whack::make_tensor<int>(whack::Location::Host, dimensions);
+        CHECK(tensor.device() == whack::Location::Host);
         CHECK(tensor.host_vector().size() == 16);
         CHECK_THROWS(tensor.device_vector());
         tensor.view()(0) = 42;
@@ -53,8 +53,8 @@ void Tensor_interface()
     }
     {
         const whack::Array<uint32_t, 3> dimensions = { 2, 3, 4 };
-        auto tensor = whack::make_tensor<int>(whack::ComputeDevice::CPU, dimensions);
-        CHECK(tensor.device() == whack::ComputeDevice::CPU);
+        auto tensor = whack::make_tensor<int>(whack::Location::Host, dimensions);
+        CHECK(tensor.device() == whack::Location::Host);
         CHECK(tensor.host_vector().size() == 2 * 3 * 4);
         CHECK_THROWS(tensor.device_vector());
         tensor.view()(0, 0, 0) = 42;
@@ -62,8 +62,8 @@ void Tensor_interface()
     }
 
     {
-        auto tensor = whack::make_tensor<float>(whack::ComputeDevice::CUDA, 16);
-        CHECK(tensor.device() == whack::ComputeDevice::CUDA);
+        auto tensor = whack::make_tensor<float>(whack::Location::Device, 16);
+        CHECK(tensor.device() == whack::Location::Device);
         CHECK(tensor.device_vector().size() == 16);
         CHECK_THROWS(tensor.host_vector());
 
@@ -71,7 +71,7 @@ void Tensor_interface()
 
         dim3 dimBlock = dim3(1, 1, 1);
         dim3 dimGrid = dim3(1, 1, 1);
-        whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, [=] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3&) mutable {
+        whack::start_parallel(whack::Location::Device, dimGrid, dimBlock, [=] __host__ __device__(const dim3&, const dim3&, const dim3&, const dim3&) mutable {
             view(0) = 42;
         });
         CHECK(tensor.device_vector()[0] == 42);
@@ -79,8 +79,8 @@ void Tensor_interface()
 
     {
         const whack::Array<uint32_t, 3> dimensions = { 2, 3, 4 };
-        auto tensor = whack::make_tensor<float>(whack::ComputeDevice::CUDA, dimensions);
-        CHECK(tensor.device() == whack::ComputeDevice::CUDA);
+        auto tensor = whack::make_tensor<float>(whack::Location::Device, dimensions);
+        CHECK(tensor.device() == whack::Location::Device);
         CHECK(tensor.device_vector().size() == 2 * 3 * 4);
         CHECK_THROWS(tensor.host_vector());
 
@@ -98,7 +98,7 @@ void Tensor_interface()
 void Tensor_copy()
 {
     {
-        auto a = whack::make_tensor<int>(whack::ComputeDevice::CPU, 16);
+        auto a = whack::make_tensor<int>(whack::Location::Host, 16);
         auto b = a;
         CHECK(a.host_vector().begin() != b.host_vector().begin());
 
@@ -106,7 +106,7 @@ void Tensor_copy()
         CHECK(&b.view()(0) == &b.host_vector().front()); // views must point to something else
     }
     {
-        auto a = whack::make_tensor<int>(whack::ComputeDevice::CUDA, 16);
+        auto a = whack::make_tensor<int>(whack::Location::Device, 16);
         auto b = a;
         CHECK(a.device_vector().begin() != b.device_vector().begin());
         CHECK(thrust::raw_pointer_cast(a.device_vector().data()) != thrust::raw_pointer_cast(b.device_vector().data()));
@@ -115,10 +115,10 @@ void Tensor_copy()
         CHECK(&b.view()(0) == thrust::raw_pointer_cast(b.device_vector().data())); // views must point to something else
     }
     {
-        auto a = whack::make_tensor<int>(whack::ComputeDevice::CPU, 16);
-        auto b = whack::make_tensor<int>(whack::ComputeDevice::CUDA, 16);
+        auto a = whack::make_tensor<int>(whack::Location::Host, 16);
+        auto b = whack::make_tensor<int>(whack::Location::Device, 16);
         a = b;
-        CHECK(a.device() == whack::ComputeDevice::CUDA);
+        CHECK(a.device() == whack::Location::Device);
 
         CHECK(a.device_vector().begin() != b.device_vector().begin());
         CHECK(thrust::raw_pointer_cast(a.device_vector().data()) != thrust::raw_pointer_cast(b.device_vector().data()));
@@ -130,10 +130,10 @@ void Tensor_copy()
 
 void Tensor_copy_to_device_and_back()
 {
-    auto h1 = whack::make_tensor<int>(whack::ComputeDevice::CPU, 16);
+    auto h1 = whack::make_tensor<int>(whack::Location::Host, 16);
     h1.host_vector()[0] = 12387;
     auto d1 = h1.device_copy();
-    REQUIRE(d1.device() == whack::ComputeDevice::CUDA);
+    REQUIRE(d1.device() == whack::Location::Device);
     CHECK(d1.device_vector().size() == 16);
     CHECK(d1.device_vector()[0] == 12387);
     d1.device_vector()[1] = 68543;
@@ -141,13 +141,13 @@ void Tensor_copy_to_device_and_back()
     auto d2 = d1.device_copy();
     auto h2 = d2.host_copy();
 
-    CHECK(h2.device() == whack::ComputeDevice::CPU);
+    CHECK(h2.device() == whack::Location::Host);
     CHECK(h2.host_vector().size() == 16);
     CHECK(h2.host_vector()[0] == 12387);
     CHECK(h2.host_vector()[1] == 68543);
 
     auto h3 = h2.host_copy();
-    CHECK(h3.device() == whack::ComputeDevice::CPU);
+    CHECK(h3.device() == whack::Location::Host);
     CHECK(h3.host_vector().size() == 16);
     CHECK(h3.host_vector()[0] == 12387);
     CHECK(h3.host_vector()[1] == 68543);

@@ -28,7 +28,7 @@ TEST_CASE("cpu_only_kernel_starter.cpp")
     int* v_ptr = thrust::raw_pointer_cast(v.data());
     dim3 dimBlock = dim3(32, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
-    whack::start_parallel(whack::ComputeDevice::CPU, dimGrid, dimBlock, [v_ptr] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) {
+    whack::start_parallel(whack::Location::Host, dimGrid, dimBlock, [v_ptr] __host__ __device__(const dim3& gpe_gridDim, const dim3& gpe_blockDim, const dim3& gpe_blockIdx, const dim3& gpe_threadIdx) {
         if (gpe_threadIdx.x >= 16)
             return;
         v_ptr[gpe_threadIdx.x] = gpe_threadIdx.x;

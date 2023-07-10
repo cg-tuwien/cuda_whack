@@ -19,9 +19,9 @@
 #pragma once
 
 namespace whack {
-enum class ComputeDevice {
-    CPU,
-    CUDA,
+enum class Location {
+    Host,
+    Device,
     Invalid
 };
 }

@@ -79,15 +79,15 @@ namespace detail {
 }
 
 template <typename Fun>
-void start_parallel(ComputeDevice device, const dim3& gridDim, const dim3& blockDim, const Fun& function)
+void start_parallel(Location device, const dim3& gridDim, const dim3& blockDim, const Fun& function)
 {
     switch (device) {
 #ifdef __CUDACC__
-    case ComputeDevice::CUDA:
+    case Location::Device:
         detail::run_cuda_kernel(gridDim, blockDim, function);
         break;
 #endif
-    case ComputeDevice::CPU:
+    case Location::Host:
         detail::run_cpu_kernel(gridDim, blockDim, function);
         break;
     default:

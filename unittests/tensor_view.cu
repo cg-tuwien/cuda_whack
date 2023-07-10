@@ -44,7 +44,7 @@ void tensor_view_cuda_read_write_multi_dim_cuda()
     dim3 dimBlock = dim3(2, 3, 2);
     dim3 dimGrid = dim3(1, 1, 1);
     whack::start_parallel(
-        whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view) {
+        whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view) {
             WHACK_UNUSED_THREAD_INDICES
             tensor_2_view(0u, whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z) = tensor_1_view(0u, whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z) * 2;
         });
@@ -68,7 +68,7 @@ void tensor_view_cuda_read_write_multi_dim_cpu()
     dim3 dimBlock = dim3(2, 3, 2);
     dim3 dimGrid = dim3(1, 1, 1);
     whack::start_parallel(
-        whack::ComputeDevice::CPU, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view) {
+        whack::Location::Host, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view) {
             WHACK_UNUSED_THREAD_INDICES
             tensor_2_view(0u, whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z) = tensor_1_view(0u, whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z) * 2;
         });
@@ -102,7 +102,7 @@ void tensor_view_cuda_benchmark_read_write_multi_dim_cuda()
     {
         const auto nvtx_range = nvtxRangeStart("tensor_api");
         whack::start_parallel(
-            whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view, batch_dim, thread_dim, vector_dim) {
+            whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view, batch_dim, thread_dim, vector_dim) {
                 WHACK_UNUSED_THREAD_INDICES
                 const auto batch_id = whack_blockIdx.y;
                 const auto thread_id = whack_threadIdx.x;
@@ -127,7 +127,7 @@ void tensor_view_cuda_benchmark_read_write_multi_dim_cuda()
         int* tensor_1_ptr = thrust::raw_pointer_cast(tensor_1.data());
         float* tensor_2_ptr = thrust::raw_pointer_cast(tensor_2.data());
         whack::start_parallel(
-            whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_ptr, tensor_2_ptr, batch_dim, thread_dim, vector_dim) {
+            whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_ptr, tensor_2_ptr, batch_dim, thread_dim, vector_dim) {
                 WHACK_UNUSED_THREAD_INDICES
                 const auto batch_id = whack_blockIdx.y;
                 const auto thread_id = whack_threadIdx.x;

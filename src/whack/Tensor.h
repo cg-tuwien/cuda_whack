@@ -39,7 +39,7 @@ public:
 
 private:
     std::variant<thrust::host_vector<T>, thrust::device_vector<T>> m_memory;
-    ComputeDevice m_device = ComputeDevice::Invalid;
+    Location m_device = Location::Invalid;
 
     using Dimensions = whack::Array<IndexStoreType, n_dims>;
     Dimensions m_dimensions = {};
@@ -49,14 +49,14 @@ public:
     Tensor(thrust::host_vector<T>&& memory, const Dimensions& dimensions)
         : m_memory(std::move(memory))
         , m_dimensions(dimensions)
-        , m_device(ComputeDevice::CPU)
+        , m_device(Location::Host)
     {
         assert(memory.size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(0), std::multiplies<IndexCalculateType>()));
     }
     Tensor(thrust::device_vector<T>&& memory, const Dimensions& dimensions)
         : m_memory(std::move(memory))
         , m_dimensions(dimensions)
-        , m_device(ComputeDevice::CUDA)
+        , m_device(Location::Device)
     {
         assert(memory.size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(0), std::multiplies<IndexCalculateType>()));
     }
@@ -90,9 +90,9 @@ public:
     [[nodiscard]] const T* raw_pointer() const
     {
         switch (m_device) {
-        case ComputeDevice::CPU:
+        case Location::Host:
             return thrust::raw_pointer_cast(host_vector().data());
-        case ComputeDevice::CUDA:
+        case Location::Device:
             return thrust::raw_pointer_cast(device_vector().data());
         }
         assert(false);
@@ -102,9 +102,9 @@ public:
     [[nodiscard]] T* raw_pointer()
     {
         switch (m_device) {
-        case ComputeDevice::CPU:
+        case Location::Host:
             return thrust::raw_pointer_cast(host_vector().data());
-        case ComputeDevice::CUDA:
+        case Location::Device:
             return thrust::raw_pointer_cast(device_vector().data());
         }
         assert(false);
@@ -124,12 +124,12 @@ public:
     [[nodiscard]] Tensor device_copy() const;
     [[nodiscard]] Tensor host_copy() const;
 
-    [[nodiscard]] ComputeDevice device() const { return m_device; }
+    [[nodiscard]] Location device() const { return m_device; }
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
 };
 
 template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
-Tensor<T, n_dims> make_tensor(ComputeDevice device, const whack::Array<IndexStoreType, n_dims>& dimensions)
+Tensor<T, n_dims> make_tensor(Location device, const whack::Array<IndexStoreType, n_dims>& dimensions)
 {
     static_assert(std::is_integral_v<IndexStoreType>);
     static_assert(std::is_integral_v<IndexCalculateType>);
@@ -142,18 +142,18 @@ Tensor<T, n_dims> make_tensor(ComputeDevice device, const whack::Array<IndexStor
         size *= dimensions[i];
 
     switch (device) {
-    case ComputeDevice::CPU:
+    case Location::Host:
         return { thrust::host_vector<T>(size), dimensions };
-    case ComputeDevice::CUDA:
+    case Location::Device:
         return { thrust::device_vector<T>(size), dimensions };
-    case ComputeDevice::Invalid:
+    case Location::Invalid:
         return {};
     }
     return {};
 }
 
 template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
-Tensor<T, sizeof...(DimensionTypes)> make_tensor(ComputeDevice device, DimensionTypes... dim)
+Tensor<T, sizeof...(DimensionTypes)> make_tensor(Location device, DimensionTypes... dim)
 {
     static_assert(std::is_integral_v<IndexStoreType>);
     static_assert(std::is_integral_v<IndexCalculateType>);
@@ -167,11 +167,11 @@ Tensor<T, sizeof...(DimensionTypes)> make_tensor(ComputeDevice device, Dimension
     const auto dimensions = Dimensions { IndexStoreType(dim)... };
 
     switch (device) {
-    case ComputeDevice::CPU:
+    case Location::Host:
         return { thrust::host_vector<T>(size), dimensions };
-    case ComputeDevice::CUDA:
+    case Location::Device:
         return { thrust::device_vector<T>(size), dimensions };
-    case ComputeDevice::Invalid:
+    case Location::Invalid:
         return {};
     }
     return {};
@@ -180,24 +180,24 @@ Tensor<T, sizeof...(DimensionTypes)> make_tensor(ComputeDevice device, Dimension
 template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
 Tensor<T, sizeof...(DimensionTypes)> make_host_tensor(DimensionTypes... dim)
 {
-    return make_tensor<T, IndexStoreType, IndexCalculateType>(ComputeDevice::CPU, dim...);
+    return make_tensor<T, IndexStoreType, IndexCalculateType>(Location::Host, dim...);
 }
 
 template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
 Tensor<T, sizeof...(DimensionTypes)> make_device_tensor(DimensionTypes... dim)
 {
-    return make_tensor<T, IndexStoreType, IndexCalculateType>(ComputeDevice::CUDA, dim...);
+    return make_tensor<T, IndexStoreType, IndexCalculateType>(Location::Device, dim...);
 }
 
 template <typename T, uint32_t n_dims, typename IndexStoreType, typename IndexCalculateType>
 Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexStoreType, IndexCalculateType>::device_copy() const
 {
-    Tensor t = make_tensor<T>(whack::ComputeDevice::CUDA, m_dimensions);
+    Tensor t = make_tensor<T>(whack::Location::Device, m_dimensions);
     switch (m_device) {
-    case ComputeDevice::CPU:
+    case Location::Host:
         t.device_vector() = host_vector();
         break;
-    case ComputeDevice::CUDA:
+    case Location::Device:
         t.device_vector() = device_vector();
         break;
     }
@@ -207,12 +207,12 @@ Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexSto
 template <typename T, uint32_t n_dims, typename IndexStoreType, typename IndexCalculateType>
 Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexStoreType, IndexCalculateType>::host_copy() const
 {
-    Tensor t = make_tensor<T>(whack::ComputeDevice::CPU, m_dimensions);
+    Tensor t = make_tensor<T>(whack::Location::Host, m_dimensions);
     switch (m_device) {
-    case ComputeDevice::CPU:
+    case Location::Host:
         t.host_vector() = host_vector();
         break;
-    case ComputeDevice::CUDA:
+    case Location::Device:
         t.host_vector() = device_vector();
         break;
     }

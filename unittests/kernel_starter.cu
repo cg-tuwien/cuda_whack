@@ -30,7 +30,7 @@
 void kernel_starter_interface() {
     dim3 dimBlock = dim3(1, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
-    whack::start_parallel(whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL() { WHACK_UNUSED_THREAD_INDICES });
+    whack::start_parallel(whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL() { WHACK_UNUSED_THREAD_INDICES });
 }
 
 void kernel_starter_start_on_cuda() {
@@ -39,7 +39,7 @@ void kernel_starter_start_on_cuda() {
     dim3 dimBlock = dim3(32, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
     whack::start_parallel(
-        whack::ComputeDevice::CUDA, dimGrid, dimBlock, WHACK_KERNEL(v_ptr) {
+        whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL(v_ptr) {
             WHACK_UNUSED_THREAD_INDICES
             if (whack_threadIdx.x >= 16)
                 return;
@@ -59,7 +59,7 @@ void kernel_starter_start_on_cpu() {
     dim3 dimBlock = dim3(32, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
     whack::start_parallel(
-        whack::ComputeDevice::CPU, dimGrid, dimBlock, WHACK_KERNEL(v_ptr) {
+        whack::Location::Host, dimGrid, dimBlock, WHACK_KERNEL(v_ptr) {
             WHACK_UNUSED_THREAD_INDICES
             if (whack_threadIdx.x >= 16)
                 return;

@@ -85,7 +85,7 @@ public:
     {
     }
 
-    ComputeDevice device() const
+    Location device() const
     {
         return std::visit([](const auto& tensor) { return tensor.device(); }, m_tensor);
     }
@@ -111,7 +111,7 @@ public:
 // template <typename Functor>
 inline StateTensor<FastGenerationType, 1> make_host_state(/*Functor seed_and_sequence, */ int)
 {
-    auto t = make_tensor<CpuRNG>(whack::ComputeDevice::CPU, 1);
+    auto t = make_tensor<CpuRNG>(whack::Location::Host, 1);
     using TensorType = decltype(t);
     auto st = StateTensor<FastGenerationType, TensorType::n_dims_value, TensorType::index_store_type, TensorType::index_calculate_type>(t);
     //    auto v = t.view();
