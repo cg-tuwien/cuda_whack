@@ -22,14 +22,14 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "whack/RandomNumberGenerator.h"
 #include "whack/kernel.h"
-#include "whack/rng/state.h"
+#include "whack/random/generators.h"
+#include "whack/random/state.h"
 
 namespace {
 void run_rng_state_tensor_test(whack::Location location)
 {
-    auto s1 = whack::rng::make_state(location, 1, 1);
+    auto s1 = whack::random::make_state(location, 1, 1);
     auto s1_view = s1.view();
 
     whack::start_parallel(
@@ -41,7 +41,7 @@ void run_rng_state_tensor_test(whack::Location location)
             s1_view(0, 0) = whack::KernelRNG(0, 0);
         });
 
-    auto s2 = whack::rng::make_state(location, 1);
+    auto s2 = whack::random::make_state(location, 1);
     auto s2_view = s2.view();
 
     whack::start_parallel(
@@ -53,7 +53,7 @@ void run_rng_state_tensor_test(whack::Location location)
             s2_view(0) = whack::KernelRNG(10, 0);
         });
 
-    auto s3 = whack::rng::make_state<whack::rng::FastInitType>(location, 1);
+    auto s3 = whack::random::make_state<whack::random::FastInitType>(location, 1);
     auto s3_view = s3.view();
 
     whack::start_parallel(
@@ -101,7 +101,7 @@ void run_rng_state_tensor_benchmark(const std::string& rng_name)
     constexpr auto n_threads = 1024;
     constexpr auto n_random_numbers = 128;
 
-    auto s1 = whack::rng::make_state<RngType>(location, n_batch, n_blocks, n_threads);
+    auto s1 = whack::random::make_state<RngType>(location, n_batch, n_blocks, n_threads);
     auto s1_view = s1.view();
 
     BENCHMARK(std::to_string(n_batch * n_blocks * n_threads) + " calls to whack::" + rng_name + "()")
@@ -159,15 +159,15 @@ void run_rng_state_tensor_benchmark(const std::string& rng_name)
 
 TEST_CASE("rng_state: api")
 {
-    CHECK(whack::rng::StateTensor<whack::rng::FastGenerationType, 1>().location() == whack::Location::Invalid);
-    CHECK(whack::rng::StateTensor<whack::rng::FastGenerationType, 1>().raw_pointer() == nullptr);
-    CHECK(whack::rng::StateTensor<whack::rng::FastGenerationType, 1>().dimensions()[0] == 0);
+    CHECK(whack::random::StateTensor<whack::random::FastGenerationType, 1>().location() == whack::Location::Invalid);
+    CHECK(whack::random::StateTensor<whack::random::FastGenerationType, 1>().raw_pointer() == nullptr);
+    CHECK(whack::random::StateTensor<whack::random::FastGenerationType, 1>().dimensions()[0] == 0);
     run_rng_state_tensor_test(whack::Location::Host);
     run_rng_state_tensor_test(whack::Location::Device);
 }
 
 TEST_CASE("rng_state: benchmark")
 {
-    run_rng_state_tensor_benchmark<whack::rng::FastGenerationType>("GpuRNGFastGeneration");
-    run_rng_state_tensor_benchmark<whack::rng::FastInitType>("GpuRNGFastInit");
+    run_rng_state_tensor_benchmark<whack::random::FastGenerationType>("GpuRNGFastGeneration");
+    run_rng_state_tensor_benchmark<whack::random::FastInitType>("GpuRNGFastInit");
 }

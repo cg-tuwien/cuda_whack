@@ -24,9 +24,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "whack/RandomNumberGenerator.h"
 #include "whack/Tensor.h"
 #include "whack/kernel.h"
+#include "whack/random/generators.h"
 
 constexpr auto n_batches = 8;
 

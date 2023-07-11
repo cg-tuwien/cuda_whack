@@ -20,11 +20,11 @@
 
 #include <variant>
 
-#include "whack/RandomNumberGenerator.h"
 #include "whack/Tensor.h"
 #include "whack/kernel.h"
+#include "whack/random/generators.h"
 
-namespace whack::rng {
+namespace whack::random {
 
 struct FastGenerationType;
 struct FastInitType;

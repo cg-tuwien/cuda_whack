@@ -8,10 +8,10 @@ add_library(whack
     whack/array.h
     whack/macros.h
     whack/TensorView.h
-    whack/RandomNumberGenerator.h
     whack/Tensor.h
     whack/enums.h
-    whack/rng/state.h
+    whack/random/generators.h
+    whack/random/state.h
 )
 target_link_libraries(whack PUBLIC OpenMP::OpenMP_CXX glm::glm)
 target_compile_definitions(whack PUBLIC GLM_FORCE_XYZW_ONLY GLM_FORCE_INLINE)

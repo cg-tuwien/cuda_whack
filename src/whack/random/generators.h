@@ -4,7 +4,7 @@
 #include <curand_kernel.h>
 #include <glm/glm.hpp>
 
-#include "macros.h"
+#include "whack/macros.h"
 
 namespace whack {
 
@@ -107,18 +107,13 @@ using KernelRNGFastGeneration  = CpuRNG;
 using KernelRNGFastInit  = CpuRNG;
 #endif
 
-
-
+// compiler errors if moved into the RandomNumberGenerator class
+template <typename scalar_t, int n_dims, typename Rng>
+WHACK_DEVICES_INLINE glm::vec<n_dims, scalar_t> random_normal_vec(Rng* rng)
+{
+    if constexpr (n_dims == 2)
+        return rng->normal2();
+    else
+        return rng->normal3();
 }
-
-// namespace whack {
-//// compiler errors if moved into the RandomNumberGenerator class
-// template <typename scalar_t, int n_dims>
-// WHACK_DEVICES_INLINE glm::vec<n_dims, scalar_t> random_normal_vec(RandomNumberGenerator<scalar_t>* rng)
-//{
-//     if constexpr (n_dims == 2)
-//         return rng->normal2();
-//     else
-//         return rng->normal3();
-// }
-// }
+}
