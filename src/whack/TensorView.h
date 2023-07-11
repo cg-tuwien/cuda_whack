@@ -52,6 +52,7 @@ class TensorView {
 
 #if !defined(NDEBUG)
     Location m_location = Location::Invalid;
+#endif
 
     WHACK_DEVICES_INLINE void assert_access_location() const
     {
@@ -64,7 +65,6 @@ class TensorView {
         assert(m_location == Location::Host);
 #endif
     }
-#endif
 
     WHACK_DEVICES_INLINE IndexCalculateType offset(const Index& index) const
     {
