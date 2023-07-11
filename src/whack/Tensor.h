@@ -133,12 +133,12 @@ public:
 
     [[nodiscard]] TensorView<const T, n_dims, IndexStoreType, IndexCalculateType> view() const
     {
-        return { raw_pointer(), m_dimensions };
+        return { raw_pointer(), location(), m_dimensions };
     }
 
     [[nodiscard]] TensorView<T, n_dims, IndexStoreType, IndexCalculateType> view()
     {
-        return { raw_pointer(), m_dimensions };
+        return { raw_pointer(), location(), m_dimensions };
     }
 
     [[nodiscard]] Tensor device_copy() const;

@@ -22,8 +22,10 @@
 #include <cinttypes>
 #include <type_traits>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
+#include "enums.h"
 #include "indexing.h"
 #include "macros.h"
 
@@ -48,6 +50,22 @@ class TensorView {
     Index m_dimensions = {};
 #endif
 
+#if !defined(NDEBUG)
+    Location m_location = Location::Invalid;
+
+    WHACK_DEVICES_INLINE void assert_access_location() const
+    {
+#if defined(__CUDACC__) && defined(__CUDA_ARCH__)
+        // device code trajectory
+        assert(m_location == Location::Device);
+#else
+        // nvcc host code trajectory
+        // or non-nvcc code trajectory
+        assert(m_location == Location::Host);
+#endif
+    }
+#endif
+
     WHACK_DEVICES_INLINE IndexCalculateType offset(const Index& index) const
     {
 #ifdef WHACK_STRIDE_BASED_CALCULATION
@@ -64,11 +82,13 @@ class TensorView {
 public:
     TensorView() = default;
 
-    WHACK_DEVICES_INLINE
-    TensorView(T* data, const Index& dimensions)
+    TensorView(T* data, Location location, const Index& dimensions)
         : m_data(data)
 #if !defined(NDEBUG) || !defined(WHACK_STRIDE_BASED_CALCULATION)
         , m_dimensions(dimensions)
+#endif
+#if !defined(NDEBUG)
+        , m_location(location)
 #endif
     {
 #ifdef WHACK_STRIDE_BASED_CALCULATION
@@ -78,11 +98,24 @@ public:
             cum_dims *= dimensions[i];
         }
 #endif
+
+        cudaPointerAttributes attr;
+        cudaPointerGetAttributes(&attr, (void*)data);
+        if (location == Location::Device) {
+            if (attr.type != cudaMemoryTypeDevice && attr.type != cudaMemoryTypeManaged)
+                throw std::logic_error("TensorView created with Location::Device, but data points to something on the host!");
+        } else if (location == Location::Host) {
+            if (attr.type != cudaMemoryTypeHost && attr.type != cudaMemoryTypeManaged && attr.type != cudaMemoryTypeUnregistered)
+                throw std::logic_error("TensorView created with Location::Host, but data points to something on the device!");
+        } else {
+            throw std::logic_error("TensorView created with invalid location!");
+        }
     }
 
     template <typename U = T>
     WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), const U&>::type operator()(const Index& index) const
     {
+        assert_access_location();
         for (unsigned i = 0; i < n_dims; ++i)
             assert(index[i] < m_dimensions[i]);
 
@@ -92,6 +125,7 @@ public:
     template <typename U = T>
     WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), U&>::type operator()(const Index& index)
     {
+        assert_access_location();
         for (unsigned i = 0; i < n_dims; ++i)
             assert(index[i] < m_dimensions[i]);
         return *(m_data + offset(index));
@@ -100,6 +134,7 @@ public:
     WHACK_DEVICES_INLINE
     const T& operator()(const IndexStoreType& index) const
     {
+        assert_access_location();
         assert(index < m_dimensions[0]);
         return *(m_data + index);
     }
@@ -107,6 +142,7 @@ public:
     WHACK_DEVICES_INLINE
     T& operator()(const IndexStoreType& index)
     {
+        assert_access_location();
         assert(index < m_dimensions[0]);
         return *(m_data + index);
     }
@@ -125,35 +161,72 @@ public:
 };
 
 // whack::Array api
-template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename ThrustVector, uint32_t n_dims>
-TensorView<typename std::remove_pointer_t<decltype(thrust::raw_pointer_cast(ThrustVector().data()))>, n_dims, IndexStoreType, IndexCalculateType>
-make_tensor_view(ThrustVector& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
-{
-    static_assert(std::is_integral_v<IndexStoreType>);
-    static_assert(std::is_integral_v<IndexCalculateType>);
-    static_assert(std::is_unsigned_v<IndexStoreType>);
-    static_assert(std::is_unsigned_v<IndexCalculateType>);
+namespace detail {
+    template <template <typename...> class, template <typename...> class>
+    struct is_same_template : std::false_type { };
 
+    template <template <typename...> class T>
+    struct is_same_template<T, T> : std::true_type { };
+
+    template <template <typename...> class T, template <typename...> class U>
+    inline constexpr bool is_same_template_v = is_same_template<T, U>::value;
+
+    template <template <typename...> class Vector, typename T>
+    std::enable_if_t<detail::is_same_template_v<Vector, thrust::host_vector>, Location>
+    location_of(const Vector<T>&)
+    {
+        return Location::Host;
+    }
+
+    template <template <typename...> class Vector, typename T>
+    std::enable_if_t<detail::is_same_template_v<Vector, thrust::device_vector>, Location>
+    location_of(const Vector<T>&)
+    {
+        return Location::Device;
+    }
+}
+
+template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, uint32_t n_dims>
+std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<T, n_dims, IndexStoreType, IndexCalculateType>>
+make_tensor_view(Vector<T>& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
+{
 #ifndef NDEBUG
     IndexCalculateType dimension_size = 1;
     for (unsigned i = 0; i < n_dims; ++i)
         dimension_size *= dimensions[i];
     assert(dimension_size == data.size());
 #endif
-    return { thrust::raw_pointer_cast(data.data()), dimensions };
+    return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), dimensions };
+}
+
+template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, uint32_t n_dims>
+std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<const T, n_dims, IndexStoreType, IndexCalculateType>>
+make_tensor_view(const Vector<T>& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
+{
+#ifndef NDEBUG
+    IndexCalculateType dimension_size = 1;
+    for (unsigned i = 0; i < n_dims; ++i)
+        dimension_size *= dimensions[i];
+    assert(dimension_size == data.size());
+#endif
+    return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), dimensions };
 }
 
 // parameter pack api
-template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename ThrustVector, typename... DimensionTypes>
-TensorView<
-    typename std::remove_pointer_t<decltype(thrust::raw_pointer_cast(ThrustVector().data()))>,
-    sizeof...(DimensionTypes),
-    std::make_unsigned_t<IndexStoreType>,
-    std::make_unsigned_t<IndexCalculateType>>
-make_tensor_view(ThrustVector& data, DimensionTypes... dimensions)
+template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, typename... DimensionTypes>
+std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<T, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType>>
+make_tensor_view(Vector<T>& data, DimensionTypes... dimensions)
 {
     assert((std::make_unsigned_t<IndexCalculateType>(dimensions) * ...) == data.size());
-    return { thrust::raw_pointer_cast(data.data()), { std::make_unsigned_t<IndexStoreType>(dimensions)... } };
+    return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), { IndexStoreType(dimensions)... } };
+}
+
+template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, typename... DimensionTypes>
+std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<const T, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType>>
+make_tensor_view(const Vector<T>& data, DimensionTypes... dimensions)
+{
+    assert((IndexCalculateType(dimensions) * ...) == data.size());
+    return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), { IndexStoreType(dimensions)... } };
 }
 
 }
