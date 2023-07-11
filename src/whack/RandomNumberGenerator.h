@@ -14,6 +14,10 @@ class GpuRandomNumberGenerator {
 
 public:
     __device__
+    GpuRandomNumberGenerator()
+        = default;
+
+    __device__
     GpuRandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
     {
         curand_init(seed, sequence_nr, 0, &m_state);

@@ -27,25 +27,25 @@
 
 namespace {
 
-void run_rng_state_tensor_test()
+void run_rng_state_tensor_test(whack::Location location)
 {
-    auto s1 = whack::rng::make_host_state(1);
+    auto s1 = whack::rng::make_state(location, 1, 1);
     auto s1_view = s1.view();
 
     whack::start_parallel(
-        s1.location(), 1, 1, WHACK_KERNEL(=) {
+        location, 1, 1, WHACK_KERNEL(=) {
             WHACK_UNUSED(whack_gridDim);
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
             WHACK_UNUSED(whack_blockIdx);
-            s1_view(0) = whack::KernelRNG(0, 0);
+            s1_view(0, 0) = whack::KernelRNG(0, 0);
         });
 
-    auto s2 = whack::rng::make_host_state(1);
+    auto s2 = whack::rng::make_state(location, 1);
     auto s2_view = s2.view();
 
     whack::start_parallel(
-        s2.location(), 1, 1, WHACK_KERNEL(=) {
+        location, 1, 1, WHACK_KERNEL(=) {
             WHACK_UNUSED(whack_gridDim);
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
@@ -53,11 +53,11 @@ void run_rng_state_tensor_test()
             s2_view(0) = whack::KernelRNG(10, 0);
         });
 
-    auto result = whack::make_host_tensor<float>(1000);
+    auto result = whack::make_tensor<float>(location, 1000);
     auto result_view = result.view();
 
     whack::start_parallel(
-        s1.location(), 1, 1, WHACK_KERNEL(=) {
+        location, 1, 1, WHACK_KERNEL(=) {
             WHACK_UNUSED(whack_gridDim);
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
@@ -69,7 +69,8 @@ void run_rng_state_tensor_test()
                 result_view(i) = s1_view(0).normal();
         });
 
-    const auto result_vector = result.host_vector();
+    const auto host_copy = result.host_copy();
+    const auto result_vector = host_copy.host_vector();
     const auto mean = thrust::reduce(result_vector.begin(), result_vector.end(), 0.0f, thrust::plus<float>()) / float(result_vector.size());
     const auto two_standard_deviations = 2.f / std::sqrt(float(result_vector.size()));
     CHECK(std::abs(mean) < two_standard_deviations);
@@ -78,5 +79,9 @@ void run_rng_state_tensor_test()
 
 TEST_CASE("rng_state: api")
 {
-    run_rng_state_tensor_test();
+    CHECK(whack::rng::StateTensor<whack::rng::FastGenerationType, 1>().location() == whack::Location::Invalid);
+    CHECK(whack::rng::StateTensor<whack::rng::FastGenerationType, 1>().raw_pointer() == nullptr);
+    CHECK(whack::rng::StateTensor<whack::rng::FastGenerationType, 1>().dimensions()[0] == 0);
+    run_rng_state_tensor_test(whack::Location::Host);
+    run_rng_state_tensor_test(whack::Location::Device);
 }

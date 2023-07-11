@@ -28,6 +28,7 @@ namespace whack::rng {
 
 struct FastGenerationType;
 struct FastInitType;
+using DefaultType = FastGenerationType;
 
 namespace {
     struct UnderlyingRngStateDummy;
@@ -39,9 +40,10 @@ class StateTensorView : TensorView<UnderlyingRngStateDummy, n_dims, IndexStoreTy
     using Index = whack::Array<IndexStoreType, n_dims>;
 
 public:
-    WHACK_DEVICES_INLINE
-    StateTensorView(UnderlyingRngStateDummy* data, const Index& dimensions)
-        : TensorView<UnderlyingRngStateDummy, n_dims, IndexStoreType, IndexCalculateType>(data, dimensions)
+    StateTensorView() = default;
+
+    StateTensorView(UnderlyingRngStateDummy* data, Location location, const Index& dimensions)
+        : TensorView<UnderlyingRngStateDummy, n_dims, IndexStoreType, IndexCalculateType>(data, location, dimensions)
     {
     }
 
@@ -58,7 +60,7 @@ public:
     }
 
     template <typename U = RngType, typename... IndexTypes>
-    WHACK_DEVICES_INLINE typename std::enable_if<std::is_same<U, FastGenerationType>::value, const KernelRNGFastInit&>::type operator()(const IndexTypes&... indices) const
+    WHACK_DEVICES_INLINE typename std::enable_if<std::is_same<U, FastGenerationType>::value, const KernelRNGFastGeneration&>::type operator()(const IndexTypes&... indices) const
     {
         return reinterpret_cast<const TensorView<KernelRNGFastGeneration, n_dims, IndexStoreType, IndexCalculateType>*>(this)->operator()(indices...);
     }
@@ -79,6 +81,8 @@ class StateTensor {
     std::variant<UnderlyingTensor<CpuRNG>, UnderlyingTensor<GpuRNGFastGeneration>, UnderlyingTensor<GpuRNGFastInit>> m_tensor;
 
 public:
+    StateTensor() = default;
+
     template <typename T>
     StateTensor(UnderlyingTensor<T> t)
         : m_tensor(std::move(t))
@@ -102,22 +106,41 @@ public:
 
     StateTensorView<RngType, n_dims, IndexStoreType, IndexCalculateType> view()
     {
-        const auto ptr = raw_pointer();
-        const auto dims = dimensions();
-        return StateTensorView<RngType, n_dims, IndexStoreType, IndexCalculateType>(ptr, dims);
+        return StateTensorView<RngType, n_dims, IndexStoreType, IndexCalculateType>(raw_pointer(), location(), dimensions());
     }
 };
 
-inline StateTensor<FastGenerationType, 1> make_state(whack::Location location, int)
+template <typename GeneratorType = DefaultType, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
+inline StateTensor<GeneratorType, sizeof...(DimensionTypes)> make_host_state(DimensionTypes... dims)
 {
-    auto t = make_tensor<CpuRNG>(location, 1);
+    static_assert(std::is_same_v<GeneratorType, FastGenerationType> || std::is_same_v<GeneratorType, FastInitType>);
+    auto t = make_tensor<CpuRNG, IndexStoreType, IndexCalculateType>(whack::Location::Host, dims...);
     using TensorType = decltype(t);
-    auto st = StateTensor<FastGenerationType, TensorType::n_dims_value, TensorType::index_store_type, TensorType::index_calculate_type>(t);
+    auto st = StateTensor<GeneratorType, TensorType::n_dims_value, typename TensorType::index_store_type, typename TensorType::index_calculate_type>(t);
     return st;
 }
 
-inline StateTensor<FastGenerationType, 1> make_host_state(/*Functor seed_and_sequence, */ int)
+template <typename GeneratorType = DefaultType, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
+inline StateTensor<GeneratorType, sizeof...(DimensionTypes)> make_device_state(DimensionTypes... dims)
 {
-    return make_state(whack::Location::Host, 1);
+    static_assert(std::is_same_v<GeneratorType, FastGenerationType> || std::is_same_v<GeneratorType, FastInitType>);
+    auto t = make_tensor<GpuRNGFastGeneration, IndexStoreType, IndexCalculateType>(whack::Location::Device, dims...);
+    using TensorType = decltype(t);
+    return StateTensor<GeneratorType, TensorType::n_dims_value, typename TensorType::index_store_type, typename TensorType::index_calculate_type>(t);
+}
+
+template <typename GeneratorType = DefaultType, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
+inline StateTensor<GeneratorType, sizeof...(DimensionTypes)> make_state(whack::Location location, DimensionTypes... dims)
+{
+    static_assert(std::is_same_v<GeneratorType, FastGenerationType> || std::is_same_v<GeneratorType, FastInitType>);
+    switch (location) {
+    case whack::Location::Host:
+        return make_host_state<GeneratorType, IndexStoreType, IndexCalculateType, DimensionTypes...>(dims...);
+    case whack::Location::Device:
+        return make_device_state<GeneratorType, IndexStoreType, IndexCalculateType, DimensionTypes...>(dims...);
+    case whack::Location::Invalid:
+        break;
+    }
+    return {};
 }
 }
