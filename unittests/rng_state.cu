@@ -38,7 +38,7 @@ void run_rng_state_tensor_test(whack::Location location)
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
             WHACK_UNUSED(whack_blockIdx);
-            s1_view(0, 0) = whack::KernelRNG(0, 0);
+            s1_view(0, 0) = whack::random::KernelGenerator(0, 0);
         });
 
     auto s2 = whack::random::make_state(location, 1);
@@ -50,7 +50,7 @@ void run_rng_state_tensor_test(whack::Location location)
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
             WHACK_UNUSED(whack_blockIdx);
-            s2_view(0) = whack::KernelRNG(10, 0);
+            s2_view(0) = whack::random::KernelGenerator(10, 0);
         });
 
     auto s3 = whack::random::make_state<whack::random::FastInitType>(location, 1);
@@ -62,7 +62,7 @@ void run_rng_state_tensor_test(whack::Location location)
             WHACK_UNUSED(whack_blockDim);
             WHACK_UNUSED(whack_threadIdx);
             WHACK_UNUSED(whack_blockIdx);
-            s3_view(0) = whack::KernelRNGFastInit(20, 0);
+            s3_view(0) = whack::random::KernelGeneratorWithFastInit(20, 0);
         });
 
     auto result = whack::make_tensor<float>(location, 1000);
@@ -168,6 +168,6 @@ TEST_CASE("rng_state: api")
 
 TEST_CASE("rng_state: benchmark")
 {
-    run_rng_state_tensor_benchmark<whack::random::FastGenerationType>("GpuRNGFastGeneration");
-    run_rng_state_tensor_benchmark<whack::random::FastInitType>("GpuRNGFastInit");
+    run_rng_state_tensor_benchmark<whack::random::FastGenerationType>("FastGenerationDeviceGenerator");
+    run_rng_state_tensor_benchmark<whack::random::FastInitType>("FastInitDeviceGenerator");
 }

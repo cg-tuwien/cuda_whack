@@ -33,9 +33,9 @@ constexpr auto n_batches = 8;
 TEST_CASE("random_number_generator.cu: (single threaded)")
 {
     {
-        auto rng = whack::CpuRNG(55, 0);
+        auto rng = whack::random::HostGenerator<float>(55, 0);
         const auto rnd1 = rng.normal();
-        rng = whack::CpuRNG(55, 0);
+        rng = whack::random::HostGenerator<float>(55, 0);
         const auto rnd2 = rng.normal();
         CHECK(rnd1 == Catch::Approx(rnd2));
     }
@@ -44,15 +44,15 @@ TEST_CASE("random_number_generator.cu: (single threaded)")
 namespace {
 struct ConfigCudaFastGen {
     using enable_cuda = std::true_type;
-    using RNG = whack::KernelRNGFastGeneration;
+    using RNG = whack::random::KernelGeneratorWithFastGeneration;
 };
 struct ConfigCudaFastOffset {
     using enable_cuda = std::true_type;
-    using RNG = whack::KernelRNGFastInit;
+    using RNG = whack::random::KernelGeneratorWithFastInit;
 };
 struct ConfigCpu {
     using enable_cuda = std::false_type;
-    using RNG = whack::KernelRNGFastInit;
+    using RNG = whack::random::KernelGeneratorWithFastInit;
 };
 
 template <typename Config>

@@ -6,19 +6,19 @@
 
 #include "whack/macros.h"
 
-namespace whack {
+namespace whack::random {
 
 template <typename scalar_t, typename engine>
-class GpuRandomNumberGenerator {
+class DeviceGenerator {
     engine m_state;
 
 public:
     __device__
-    GpuRandomNumberGenerator()
+    DeviceGenerator()
         = default;
 
     __device__
-    GpuRandomNumberGenerator(uint64_t seed, uint64_t sequence_nr)
+    DeviceGenerator(uint64_t seed, uint64_t sequence_nr)
     {
         curand_init(seed, sequence_nr, 0, &m_state);
     }
@@ -49,11 +49,11 @@ public:
 };
 
 template <typename scalar_t, typename Unused = void>
-class CpuRandomNumberGenerator {
+class HostGenerator {
     std::mt19937_64 m_engine;
 
 public:
-    CpuRandomNumberGenerator(uint64_t seed = 0, uint64_t sequence_nr = 0)
+    HostGenerator(uint64_t seed = 0, uint64_t sequence_nr = 0)
         : m_engine((seed + 47616198) * 5687969629871 + sequence_nr)
     {
         // std::default_random_engine seeded with 0 or one results in the same random sequence
@@ -78,33 +78,32 @@ public:
     }
 };
 
-using CpuRNG = CpuRandomNumberGenerator<float>;
 // note: using large sequence numbers is very expensive with the fast generation type
-using GpuRNGFastGeneration = GpuRandomNumberGenerator<float, curandStateXORWOW_t>;
-using GpuRNGFastInit = GpuRandomNumberGenerator<float, curandStatePhilox4_32_10_t>;
+using FastGenerationDeviceGenerator = DeviceGenerator<float, curandStateXORWOW_t>;
+using FastInitDeviceGenerator = DeviceGenerator<float, curandStatePhilox4_32_10_t>;
 
-// KernelRNG* must be used only from within the kernel (otherwise the cpu type will be used, that is, don't forward it as a template parameter or similar to the kernel)!
+// KernelGenerator* must be used only from within the kernel (otherwise the cpu type will be used, that is, don't forward it as a template parameter or similar to the kernel)!
 #ifdef __CUDACC__
 // warning using nvcc
 #ifdef __CUDA_ARCH__
 // device code trajectory
-using KernelRNG = GpuRNGFastGeneration;
+using KernelGenerator = FastGenerationDeviceGenerator;
 // note: using large sequence numbers is very expensive with the fast generation type
-using KernelRNGFastGeneration  = GpuRNGFastGeneration;
-using KernelRNGFastInit  = GpuRNGFastInit;
+using KernelGeneratorWithFastGeneration = FastGenerationDeviceGenerator;
+using KernelGeneratorWithFastInit = FastInitDeviceGenerator;
 #else
 // nvcc host code trajectory
-using KernelRNG = CpuRNG;
+using KernelGenerator = HostGenerator<float>;
 // note: using large sequence numbers is very expensive with the fast generation type
-using KernelRNGFastGeneration  = CpuRNG;
-using KernelRNGFastInit  = CpuRNG;
+using KernelGeneratorWithFastGeneration = HostGenerator<float>;
+using KernelGeneratorWithFastInit = HostGenerator<float>;
 #endif
 #else
 // non-nvcc code trajectory
-using KernelRNG = CpuRNG;
+using KernelGenerator = HostGenerator<float>;
 // note: using large sequence numbers is very expensive with the fast generation type
-using KernelRNGFastGeneration  = CpuRNG;
-using KernelRNGFastInit  = CpuRNG;
+using KernelGeneratorWithFastGeneration = HostGenerator<float>;
+using KernelGeneratorWithFastInit = HostGenerator<float>;
 #endif
 
 // compiler errors if moved into the RandomNumberGenerator class
