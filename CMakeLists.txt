@@ -41,7 +41,7 @@ if(NOT MSVC)
     #string(APPEND CMAKE_CUDA_FLAGS " -ccbin /usr/bin/g++-9")
 
     string(APPEND CMAKE_CXX_FLAGS " -ffast-math -fno-finite-math-only")
-    string(APPEND CMAKE_CXX_FLAGS_RELEASE -O4 -march=native)
+    string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O4 -march=native")
 endif()
 
 if (WHACK_USE_LLVM_LINKER)
