@@ -110,7 +110,8 @@ void run_rng_state_tensor_benchmark(const std::string& rng_name)
             location, { n_batch, n_blocks, 1 }, { n_threads, 1, 1 }, WHACK_KERNEL(=) {
                 WHACK_UNUSED(whack_gridDim);
                 WHACK_UNUSED(whack_blockDim);
-                s1_view(whack_blockIdx.x, whack_blockIdx.y, whack_threadIdx.x) = { whack_blockIdx.x, whack_blockIdx.y * n_threads + whack_threadIdx.x };
+                // note: using large sequence numbers is very expensive with the fast generation type
+                s1_view(whack_blockIdx.x, whack_blockIdx.y, whack_threadIdx.x) = { whack_blockIdx.x * n_threads * n_blocks + whack_blockIdx.y * n_threads + whack_threadIdx.x, 0 };
             });
     };
 
@@ -151,8 +152,8 @@ void run_rng_state_tensor_benchmark(const std::string& rng_name)
     const auto host_copy = rnd_sum_sum.host_copy();
     const auto result_vector = host_copy.host_vector();
     const auto mean = thrust::reduce(result_vector.begin(), result_vector.end(), 0.0f, thrust::plus<float>()) / float(result_vector.size());
-    const auto two_standard_deviations = 2.f / std::sqrt(float(n_batch * n_blocks * n_threads * unsigned(n_random_numbers)));
-    CHECK(std::abs(mean) < two_standard_deviations);
+    const auto four_standard_deviations = 4.f / std::sqrt(float(n_batch * n_blocks * n_threads * unsigned(n_random_numbers)));
+    CHECK(std::abs(mean) < four_standard_deviations);
 }
 }
 

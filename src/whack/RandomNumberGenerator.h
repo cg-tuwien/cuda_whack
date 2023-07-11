@@ -79,27 +79,30 @@ public:
 };
 
 using CpuRNG = CpuRandomNumberGenerator<float>;
+// note: using large sequence numbers is very expensive with the fast generation type
 using GpuRNGFastGeneration = GpuRandomNumberGenerator<float, curandStateXORWOW_t>;
 using GpuRNGFastInit = GpuRandomNumberGenerator<float, curandStatePhilox4_32_10_t>;
 
-
-// KernelRNG* must be used only from within the kernel
+// KernelRNG* must be used only from within the kernel (otherwise the cpu type will be used, that is, don't forward it as a template parameter or similar to the kernel)!
 #ifdef __CUDACC__
 // warning using nvcc
 #ifdef __CUDA_ARCH__
 // device code trajectory
 using KernelRNG = GpuRNGFastGeneration;
+// note: using large sequence numbers is very expensive with the fast generation type
 using KernelRNGFastGeneration  = GpuRNGFastGeneration;
 using KernelRNGFastInit  = GpuRNGFastInit;
 #else
 // nvcc host code trajectory
 using KernelRNG = CpuRNG;
+// note: using large sequence numbers is very expensive with the fast generation type
 using KernelRNGFastGeneration  = CpuRNG;
 using KernelRNGFastInit  = CpuRNG;
 #endif
 #else
 // non-nvcc code trajectory
 using KernelRNG = CpuRNG;
+// note: using large sequence numbers is very expensive with the fast generation type
 using KernelRNGFastGeneration  = CpuRNG;
 using KernelRNGFastInit  = CpuRNG;
 #endif
