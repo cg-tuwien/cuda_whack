@@ -64,6 +64,13 @@ public:
         const auto rz = curand_normal(&m_state);
         return glm::vec<3, scalar_t>(r.x, r.y, rz);
     }
+
+    __device__
+        scalar_t
+        uniform()
+    {
+        return curand_uniform(&m_state);
+    }
 };
 
 template <typename scalar_t, typename Unused = void>
@@ -77,6 +84,7 @@ public:
         // std::default_random_engine seeded with 0 or one results in the same random sequence
         // should be enough to just add one, but let's just shuffle a bit more for good measure.
     }
+
     scalar_t normal()
     {
         std::normal_distribution<scalar_t> normal_distribution;
@@ -93,6 +101,12 @@ public:
     {
         std::normal_distribution<scalar_t> normal_distribution;
         return glm::vec<3, scalar_t>(normal_distribution(m_engine), normal_distribution(m_engine), normal_distribution(m_engine));
+    }
+
+    scalar_t uniform()
+    {
+        std::uniform_real_distribution<scalar_t> uniform_distribution(0.0, 1.0);
+        return uniform_distribution(m_engine);
     }
 };
 

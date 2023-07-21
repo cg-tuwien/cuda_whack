@@ -26,6 +26,12 @@
 #include "whack/random/generators.h"
 #include "whack/random/state.h"
 
+struct BenchmarkResults
+{
+    float mean;
+    float four_std_dev;
+};
+
 namespace {
 void run_rng_state_tensor_test(whack::Location location)
 {
@@ -86,20 +92,42 @@ void run_rng_state_tensor_test(whack::Location location)
     const auto mean = thrust::reduce(result_vector.begin(), result_vector.end(), 0.0f, thrust::plus<float>()) / float(result_vector.size());
     const auto two_standard_deviations = 2.f / std::sqrt(float(result_vector.size()));
     CHECK(std::abs(mean) < two_standard_deviations);
+
+    auto result2 = whack::make_tensor<float>(location, 1000);
+    auto result2_view = result2.view();
+
+    whack::start_parallel(
+        location, 1, 1, WHACK_KERNEL(= ) {
+        WHACK_UNUSED(whack_gridDim);
+        WHACK_UNUSED(whack_blockDim);
+        WHACK_UNUSED(whack_threadIdx);
+        WHACK_UNUSED(whack_blockIdx);
+
+        for (auto i = 0u; i < 1000; ++i)
+            result2_view(i) = s1_view(0).uniform();
+    });
+
+    const auto host2_copy = result2.host_copy();
+    const auto result2_vector = host2_copy.host_vector();
+    for (auto i = 0u; i < 1000; ++i)
+    {
+        CHECK(result2_vector[i] > 0);
+        CHECK(result2_vector[i] < 1);
+    }
 }
 
 template <typename RngType>
-void run_rng_state_tensor_benchmark(const std::string& rng_name)
+BenchmarkResults run_rng_state_tensor_benchmark(const std::string& rng_name)
 {
     //    constexpr auto n_batch = 10;
     //    constexpr auto n_blocks = 256;
     //    constexpr auto n_threads = 1024;
     //    constexpr auto n_random_numbers = 1024;
     constexpr auto location = whack::Location::Device;
-    constexpr auto n_batch = 10;
-    constexpr auto n_blocks = 256;
-    constexpr auto n_threads = 1024;
-    constexpr auto n_random_numbers = 128;
+    constexpr unsigned int n_batch = 10;
+    constexpr unsigned int n_blocks = 256;
+    constexpr unsigned int n_threads = 1024;
+    constexpr unsigned int n_random_numbers = 128;
 
     auto s1 = whack::random::make_state<RngType>(location, n_batch, n_blocks, n_threads);
     auto s1_view = s1.view();
@@ -153,7 +181,9 @@ void run_rng_state_tensor_benchmark(const std::string& rng_name)
     const auto result_vector = host_copy.host_vector();
     const auto mean = thrust::reduce(result_vector.begin(), result_vector.end(), 0.0f, thrust::plus<float>()) / float(result_vector.size());
     const auto four_standard_deviations = 4.f / std::sqrt(float(n_batch * n_blocks * n_threads * unsigned(n_random_numbers)));
-    CHECK(std::abs(mean) < four_standard_deviations);
+    // CHECK(std::abs(mean) < four_standard_deviations);
+    // CHECK in templated function leads to internal error : assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
+    return { mean, four_standard_deviations };
 }
 }
 
@@ -168,6 +198,8 @@ TEST_CASE("rng_state: api")
 
 TEST_CASE("rng_state: benchmark")
 {
-    run_rng_state_tensor_benchmark<whack::random::FastGenerationType>("FastGenerationDeviceGenerator");
-    run_rng_state_tensor_benchmark<whack::random::FastInitType>("FastInitDeviceGenerator");
+    BenchmarkResults results = run_rng_state_tensor_benchmark<whack::random::FastGenerationType>("FastGenerationDeviceGenerator");
+    CHECK(std::abs(results.mean) < results.four_std_dev);
+    results = run_rng_state_tensor_benchmark<whack::random::FastInitType>("FastInitDeviceGenerator");
+    CHECK(std::abs(results.mean) < results.four_std_dev);
 }
