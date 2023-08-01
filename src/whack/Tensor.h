@@ -38,7 +38,7 @@ public:
     using index_calculate_type = IndexCalculateType;
 
 private:
-    std::variant<thrust::host_vector<T>, thrust::device_vector<T>> m_memory;
+    std::variant<std::shared_ptr<thrust::host_vector<T>>, std::shared_ptr<thrust::device_vector<T>>> m_memory;
     Location m_device = Location::Invalid;
 
     using Dimensions = whack::Array<IndexStoreType, n_dims>;
@@ -46,14 +46,14 @@ private:
 
 public:
     Tensor() = default;
-    Tensor(thrust::host_vector<T>&& memory, const Dimensions& dimensions)
+    Tensor(std::shared_ptr<thrust::host_vector<T>> memory, const Dimensions& dimensions)
         : m_memory(std::move(memory))
         , m_dimensions(dimensions)
         , m_device(Location::Host)
     {
         assert(host_vector().size() == std::reduce(dimensions.begin(), dimensions.end(), IndexCalculateType(1), std::multiplies<IndexCalculateType>()));
     }
-    Tensor(thrust::device_vector<T>&& memory, const Dimensions& dimensions)
+    Tensor(std::shared_ptr<thrust::device_vector<T>> memory, const Dimensions& dimensions)
         : m_memory(std::move(memory))
         , m_dimensions(dimensions)
         , m_device(Location::Device)
@@ -64,7 +64,7 @@ public:
     [[nodiscard]] thrust::host_vector<T>& host_vector() &
     {
         try {
-            return std::get<thrust::host_vector<T>>(m_memory);
+            return *std::get<std::shared_ptr<thrust::host_vector<T>>>(m_memory);
         } catch (...) {
             throw std::logic_error("whack::Tensor::host_vector() called on a tensor that is not on the host!");
         }
@@ -73,7 +73,7 @@ public:
     [[nodiscard]] const thrust::host_vector<T>& host_vector() const&
     {
         try {
-            return std::get<thrust::host_vector<T>>(m_memory);
+            return *std::get<std::shared_ptr<thrust::host_vector<T>>>(m_memory);
         } catch (...) {
             throw std::logic_error("whack::Tensor::host_vector() called on a tensor that is not on the host!");
         }
@@ -85,7 +85,7 @@ public:
     [[nodiscard]] thrust::device_vector<T>& device_vector() &
     {
         try {
-            return std::get<thrust::device_vector<T>>(m_memory);
+            return *std::get<std::shared_ptr<thrust::device_vector<T>>>(m_memory);
         } catch (...) {
             throw std::logic_error("whack::Tensor::device_vector() called on a tensor that is not on the device!");
         }
@@ -94,7 +94,7 @@ public:
     [[nodiscard]] const thrust::device_vector<T>& device_vector() const &
     {
         try {
-            return std::get<thrust::device_vector<T>>(m_memory);
+            return *std::get<std::shared_ptr<thrust::device_vector<T>>>(m_memory);
         } catch (...) {
             throw std::logic_error("whack::Tensor::device_vector() called on a tensor that is not on the device!");
         }
@@ -163,9 +163,9 @@ Tensor<T, n_dims> make_tensor(Location device, const whack::Array<IndexStoreType
 
     switch (device) {
     case Location::Host:
-        return { thrust::host_vector<T>(size), dimensions };
+        return { std::make_shared<thrust::host_vector<T>>(size), dimensions };
     case Location::Device:
-        return { thrust::device_vector<T>(size), dimensions };
+        return { std::make_shared<thrust::device_vector<T>>(size), dimensions };
     case Location::Invalid:
         return {};
     }
@@ -188,9 +188,9 @@ Tensor<T, sizeof...(DimensionTypes)> make_tensor(Location device, DimensionTypes
 
     switch (device) {
     case Location::Host:
-        return { thrust::host_vector<T>(size), dimensions };
+        return { std::make_shared<thrust::host_vector<T>>(size), dimensions };
     case Location::Device:
-        return { thrust::device_vector<T>(size), dimensions };
+        return { std::make_shared<thrust::device_vector<T>>(size), dimensions };
     case Location::Invalid:
         return {};
     }
