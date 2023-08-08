@@ -163,10 +163,12 @@ public:
 // whack::Array api
 namespace detail {
     template <template <typename...> class, template <typename...> class>
-    struct is_same_template : std::false_type { };
+    struct is_same_template : std::false_type {
+    };
 
     template <template <typename...> class T>
-    struct is_same_template<T, T> : std::true_type { };
+    struct is_same_template<T, T> : std::true_type {
+    };
 
     template <template <typename...> class T, template <typename...> class U>
     inline constexpr bool is_same_template_v = is_same_template<T, U>::value;
@@ -184,7 +186,7 @@ namespace detail {
     {
         return Location::Device;
     }
-}
+} // namespace detail
 
 template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, uint32_t n_dims>
 std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<T, n_dims, IndexStoreType, IndexCalculateType>>
@@ -229,4 +231,4 @@ make_tensor_view(const Vector<T>& data, DimensionTypes... dimensions)
     return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), { IndexStoreType(dimensions)... } };
 }
 
-}
+} // namespace whack

@@ -52,4 +52,4 @@ WHACK_DEVICES_INLINE large_type join_n_dim_index(const Array<small_type, n_dims>
     }
     return joined_idx;
 }
-}
+} // namespace whack

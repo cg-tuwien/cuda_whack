@@ -140,4 +140,4 @@ inline StateTensor<GeneratorType, sizeof...(DimensionTypes)> make_state(whack::L
     assert(false);
     return {};
 }
-}
+} // namespace whack::random

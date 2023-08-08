@@ -17,10 +17,10 @@
  *****************************************************************************/
 
 #pragma once
-#include <random>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 #include <glm/glm.hpp>
+#include <random>
 
 #include "whack/macros.h"
 
@@ -147,4 +147,4 @@ WHACK_DEVICES_INLINE glm::vec<n_dims, scalar_t> random_normal_vec(Rng* rng)
     else
         return rng->normal3();
 }
-}
+} // namespace whack::random

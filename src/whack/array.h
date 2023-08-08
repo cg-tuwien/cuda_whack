@@ -90,4 +90,4 @@ struct Array {
         return data + N;
     }
 };
-}
+} // namespace whack

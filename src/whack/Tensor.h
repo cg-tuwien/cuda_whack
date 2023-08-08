@@ -91,7 +91,7 @@ public:
         }
     }
 
-    [[nodiscard]] const thrust::device_vector<T>& device_vector() const &
+    [[nodiscard]] const thrust::device_vector<T>& device_vector() const&
     {
         try {
             return std::get<thrust::device_vector<T>>(m_memory);
@@ -239,4 +239,4 @@ Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexSto
     return t;
 }
 
-}
+} // namespace whack

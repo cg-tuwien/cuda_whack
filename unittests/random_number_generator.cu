@@ -42,35 +42,35 @@ TEST_CASE("random_number_generator.cu: (single threaded)")
 }
 
 namespace {
-    struct ConfigCudaFastGen {
-        using enable_cuda = std::true_type;
-        using RNG = whack::random::KernelGeneratorWithFastGeneration;
-    };
-    struct ConfigCudaFastOffset {
-        using enable_cuda = std::true_type;
-        using RNG = whack::random::KernelGeneratorWithFastInit;
-    };
-    struct ConfigCpu {
-        using enable_cuda = std::false_type;
-        using RNG = whack::random::KernelGeneratorWithFastInit;
-    };
+struct ConfigCudaFastGen {
+    using enable_cuda = std::true_type;
+    using RNG = whack::random::KernelGeneratorWithFastGeneration;
+};
+struct ConfigCudaFastOffset {
+    using enable_cuda = std::true_type;
+    using RNG = whack::random::KernelGeneratorWithFastInit;
+};
+struct ConfigCpu {
+    using enable_cuda = std::false_type;
+    using RNG = whack::random::KernelGeneratorWithFastInit;
+};
 
-    template <typename Config>
-    whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed()
-    {
-        using RNG = typename Config::RNG;
+template <typename Config>
+whack::Tensor<float, 3> compute_random_numbers_with_fixed_seed()
+{
+    using RNG = typename Config::RNG;
 
-        auto retval = whack::make_host_tensor<float>(n_batches, 16, 1024);
-        if (Config::enable_cuda::value) {
-            retval = retval.device_copy();
-        }
+    auto retval = whack::make_host_tensor<float>(n_batches, 16, 1024);
+    if (Config::enable_cuda::value) {
+        retval = retval.device_copy();
+    }
 
-        dim3 dimBlock = dim3(32, 4, 1);
-        dim3 dimGrid = dim3(1, 4, n_batches);
-        auto view = retval.view();
+    dim3 dimBlock = dim3(32, 4, 1);
+    dim3 dimGrid = dim3(1, 4, n_batches);
+    auto view = retval.view();
 
-        whack::start_parallel(
-            retval.location(), dimGrid, dimBlock, WHACK_KERNEL(= ) {
+    whack::start_parallel(
+        retval.location(), dimGrid, dimBlock, WHACK_KERNEL(=) {
             const auto sequence_nr = whack::join_n_dim_index<uint64_t, 6, unsigned>(
                 { whack_blockDim.x, whack_blockDim.y, whack_blockDim.z, whack_gridDim.x, whack_gridDim.y, whack_gridDim.z },
                 { whack_threadIdx.x, whack_threadIdx.y, whack_threadIdx.z, whack_blockIdx.x, whack_blockIdx.y, whack_blockIdx.z });
@@ -82,17 +82,15 @@ namespace {
             for (auto i = 0u; i < 32; ++i)
                 view(idZ, idY, idX + i) = rng.normal();
         });
-        return retval;
-    }
+    return retval;
 }
+} // namespace
 
-struct Results1D
-{
+struct Results1D {
     float mean;
     float var;
     float two_std_dev;
 };
-
 
 template <typename Config>
 Results1D run_random_number_generator_1d()
@@ -133,7 +131,7 @@ Results1D run_random_number_generator_1d()
             (void)idZ;
             assert(rnd_v(idZ, idY, idX) == rnd2_v(idZ, idY, idX));
         });
-    return {mean, variance, two_standard_deviations};
+    return { mean, variance, two_standard_deviations };
 }
 
 template <typename Config>
@@ -164,8 +162,7 @@ whack::Tensor<glm::vec2, 3> compute_random_numbers_with_fixed_seed2()
     return retval;
 }
 
-struct Results2D
-{
+struct Results2D {
     glm::vec2 means;
     glm::vec2 vars;
     float cov;
@@ -229,11 +226,11 @@ Results2D run_random_number_generator_2d()
             (void)idZ;
             assert(rnd_v(idZ, idY, idX) == rnd2_v(idZ, idY, idX));
         });
-    return {means, variances, cov, two_standard_deviations};
+    return { means, variances, cov, two_standard_deviations };
 }
 
-//TEMPLATE_TEST_CASE is not compiling with nvcc on windoof
-//TEMPLATE_TEST_CASE("random_number_generator 1d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpu)
+// TEMPLATE_TEST_CASE is not compiling with nvcc on windoof
+// TEMPLATE_TEST_CASE("random_number_generator 1d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpu)
 TEST_CASE("random_number_generator 1d", "")
 {
     Results1D results = run_random_number_generator_1d<ConfigCudaFastGen>(); // msvc + cuda can't run cuda kernels inside TEST_CASES
@@ -255,7 +252,7 @@ TEST_CASE("random_number_generator 1d", "")
     CHECK(results.var == Catch::Approx(1.0).scale(1).epsilon(0.01));
 }
 
-//TEMPLATE_TEST_CASE("random_number_generator 2d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpu)
+// TEMPLATE_TEST_CASE("random_number_generator 2d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpu)
 TEST_CASE("random_number_generator 2d", "")
 {
     Results2D results = run_random_number_generator_2d<ConfigCudaFastGen>();

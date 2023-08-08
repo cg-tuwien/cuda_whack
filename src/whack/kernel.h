@@ -76,7 +76,7 @@ namespace detail {
             }
         }
     }
-}
+} // namespace detail
 
 template <typename Fun>
 void start_parallel(Location device, const dim3& gridDim, const dim3& blockDim, const Fun& function)
@@ -95,4 +95,4 @@ void start_parallel(Location device, const dim3& gridDim, const dim3& blockDim, 
         break;
     }
 }
-}
+} // namespace whack

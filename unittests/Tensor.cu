@@ -144,37 +144,37 @@ void Tensor_copy_to_device_and_back()
 }
 
 namespace {
-    
+
 class FailOnCopy {
     int v = 0;
 
-    public:
-        FailOnCopy() = default;
-        FailOnCopy(const FailOnCopy& other)
-            : v(other.v)
-        {
-            assert(false);
-        }
-        FailOnCopy(FailOnCopy&& other) noexcept
-            : v(other.v)
-        {
-            assert(true);
-        }
-        FailOnCopy& operator=(const FailOnCopy& other)
-        {
-            v = other.v;
-            assert(false);
-            return *this;
-        }
-        FailOnCopy& operator=(FailOnCopy&& other) noexcept
-        {
-            v = other.v;
-            assert(true);
-            return *this;
-        }
-        ~FailOnCopy() = default;
+public:
+    FailOnCopy() = default;
+    FailOnCopy(const FailOnCopy& other)
+        : v(other.v)
+    {
+        assert(false);
+    }
+    FailOnCopy(FailOnCopy&& other) noexcept
+        : v(other.v)
+    {
+        assert(true);
+    }
+    FailOnCopy& operator=(const FailOnCopy& other)
+    {
+        v = other.v;
+        assert(false);
+        return *this;
+    }
+    FailOnCopy& operator=(FailOnCopy&& other) noexcept
+    {
+        v = other.v;
+        assert(true);
+        return *this;
+    }
+    ~FailOnCopy() = default;
 };
-}
+} // namespace
 
 TEST_CASE("Tensor.cu")
 {

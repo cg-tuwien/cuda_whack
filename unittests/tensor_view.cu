@@ -58,8 +58,8 @@ void tensor_view_cuda_read_write_multi_dim_cuda()
 
 void tensor_view_cuda_read_write_multi_dim_cpu()
 {
-    const thrust::host_vector<int> tensor_1 = std::vector{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
-    thrust::host_vector<int> tensor_2 = std::vector{ 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11 };
+    const thrust::host_vector<int> tensor_1 = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+    thrust::host_vector<int> tensor_2 = std::vector { 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11 };
 
     const whack::Array<uint32_t, 4> dimensions = { 1u, 2u, 3u, 2u };
     const auto tensor_1_view = whack::make_tensor_view(tensor_1, dimensions);
@@ -160,8 +160,8 @@ TEST_CASE("tensor_view.cu")
 
 TEMPLATE_TEST_CASE("tensor_view.cu/benchmark", "", uint32_t, uint64_t)
 {
-    //SECTION("benchmark read/write multi dim cuda")
+    // SECTION("benchmark read/write multi dim cuda")
     //{
-        tensor_view_cuda_benchmark_read_write_multi_dim_cuda<TestType>();
+    tensor_view_cuda_benchmark_read_write_multi_dim_cuda<TestType>();
     //}
 }

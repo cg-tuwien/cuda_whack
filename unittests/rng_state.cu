@@ -26,8 +26,7 @@
 #include "whack/random/generators.h"
 #include "whack/random/state.h"
 
-struct BenchmarkResults
-{
+struct BenchmarkResults {
     float mean;
     float four_std_dev;
 };
@@ -97,20 +96,19 @@ void run_rng_state_tensor_test(whack::Location location)
     auto result2_view = result2.view();
 
     whack::start_parallel(
-        location, 1, 1, WHACK_KERNEL(= ) {
-        WHACK_UNUSED(whack_gridDim);
-        WHACK_UNUSED(whack_blockDim);
-        WHACK_UNUSED(whack_threadIdx);
-        WHACK_UNUSED(whack_blockIdx);
+        location, 1, 1, WHACK_KERNEL(=) {
+            WHACK_UNUSED(whack_gridDim);
+            WHACK_UNUSED(whack_blockDim);
+            WHACK_UNUSED(whack_threadIdx);
+            WHACK_UNUSED(whack_blockIdx);
 
-        for (auto i = 0u; i < 1000; ++i)
-            result2_view(i) = s1_view(0).uniform();
-    });
+            for (auto i = 0u; i < 1000; ++i)
+                result2_view(i) = s1_view(0).uniform();
+        });
 
     const auto host2_copy = result2.host_copy();
     const auto result2_vector = host2_copy.host_vector();
-    for (auto i = 0u; i < 1000; ++i)
-    {
+    for (auto i = 0u; i < 1000; ++i) {
         CHECK(result2_vector[i] > 0);
         CHECK(result2_vector[i] < 1);
     }
@@ -185,7 +183,7 @@ BenchmarkResults run_rng_state_tensor_benchmark(const std::string& rng_name)
     // CHECK in templated function leads to internal error : assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
     return { mean, four_standard_deviations };
 }
-}
+} // namespace
 
 TEST_CASE("rng_state: api")
 {

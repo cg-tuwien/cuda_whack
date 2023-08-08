@@ -27,13 +27,15 @@
 
 // windows is only happy, if the enclosing function of a host device lambda has external linkage
 
-void kernel_starter_interface() {
+void kernel_starter_interface()
+{
     dim3 dimBlock = dim3(1, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
     whack::start_parallel(whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL() { WHACK_UNUSED_THREAD_INDICES });
 }
 
-void kernel_starter_start_on_cuda() {
+void kernel_starter_start_on_cuda()
+{
     thrust::device_vector<int> v(16);
     int* v_ptr = thrust::raw_pointer_cast(v.data());
     dim3 dimBlock = dim3(32, 1, 1);
@@ -53,7 +55,8 @@ void kernel_starter_start_on_cuda() {
     }
 }
 
-void kernel_starter_start_on_cpu() {
+void kernel_starter_start_on_cpu()
+{
     thrust::host_vector<int> v(16);
     int* v_ptr = thrust::raw_pointer_cast(v.data());
     dim3 dimBlock = dim3(32, 1, 1);
