@@ -123,14 +123,14 @@ BenchmarkResults run_rng_state_tensor_benchmark(const std::string& rng_name)
     //    constexpr auto n_random_numbers = 1024;
     constexpr auto location = whack::Location::Device;
     constexpr unsigned int n_batch = 10;
-    constexpr unsigned int n_blocks = 256;
+    constexpr unsigned int n_blocks = 64;
     constexpr unsigned int n_threads = 1024;
-    constexpr unsigned int n_random_numbers = 128;
+    constexpr unsigned int n_random_numbers = 64;
 
     auto s1 = whack::random::make_state<RngType>(location, n_batch, n_blocks, n_threads);
     auto s1_view = s1.view();
 
-    BENCHMARK(std::to_string(n_batch * n_blocks * n_threads) + " calls to whack::" + rng_name + "()")
+    BENCHMARK(std::to_string(n_batch * n_blocks * n_threads) + " calls to " + rng_name + " constructor")
     {
         whack::start_parallel(
             location, { n_batch, n_blocks, 1 }, { n_threads, 1, 1 }, WHACK_KERNEL(=) {
@@ -144,7 +144,7 @@ BenchmarkResults run_rng_state_tensor_benchmark(const std::string& rng_name)
     auto rnd_sum = whack::make_tensor<float>(location, n_batch, n_blocks, n_threads);
     auto rnd_sum_view = rnd_sum.view();
 
-    BENCHMARK(std::to_string(n_batch * n_blocks * n_threads) + " x " + std::to_string(n_random_numbers) + " calls to whack::" + rng_name + "::normal()")
+    BENCHMARK(std::to_string(n_batch * n_blocks * n_threads) + " x " + std::to_string(n_random_numbers) + " calls to " + rng_name + "::normal()")
     {
         whack::start_parallel(
             location, { n_batch, n_blocks, 1 }, { n_threads, 1, 1 }, WHACK_KERNEL(=) {
