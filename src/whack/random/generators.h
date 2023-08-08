@@ -41,33 +41,25 @@ public:
         curand_init(seed, sequence_nr, 0, &m_state);
     }
 
-    __device__
-        scalar_t
-        normal()
+    __device__ scalar_t normal()
     {
         return curand_normal(&m_state);
     }
 
-    __device__
-        glm::vec<2, scalar_t>
-        normal2()
+    __device__ glm::vec<2, scalar_t> normal2()
     {
         const auto r = curand_normal2(&m_state); // no specialisation for double, but not necessary atm.
         return glm::vec<2, scalar_t>(r.x, r.y);
     }
 
-    __device__
-        glm::vec<3, scalar_t>
-        normal3()
+    __device__ glm::vec<3, scalar_t> normal3()
     {
         const auto r = curand_normal2(&m_state); // no specialisation for double, but not necessary atm.
         const auto rz = curand_normal(&m_state);
         return glm::vec<3, scalar_t>(r.x, r.y, rz);
     }
 
-    __device__
-        scalar_t
-        uniform()
+    __device__ scalar_t uniform()
     {
         return curand_uniform(&m_state);
     }

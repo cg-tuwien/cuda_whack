@@ -179,8 +179,6 @@ BenchmarkResults run_rng_state_tensor_benchmark(const std::string& rng_name)
     const auto result_vector = host_copy.host_vector();
     const auto mean = thrust::reduce(result_vector.begin(), result_vector.end(), 0.0f, thrust::plus<float>()) / float(result_vector.size());
     const auto four_standard_deviations = 4.f / std::sqrt(float(n_batch * n_blocks * n_threads * unsigned(n_random_numbers)));
-    // CHECK(std::abs(mean) < four_standard_deviations);
-    // CHECK in templated function leads to internal error : assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
     return { mean, four_standard_deviations };
 }
 } // namespace

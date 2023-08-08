@@ -32,13 +32,11 @@ constexpr auto n_batches = 8;
 
 TEST_CASE("random_number_generator.cu: (single threaded)")
 {
-    {
-        auto rng = whack::random::HostGenerator<float>(55, 0);
-        const auto rnd1 = rng.normal();
-        rng = whack::random::HostGenerator<float>(55, 0);
-        const auto rnd2 = rng.normal();
-        CHECK(rnd1 == Catch::Approx(rnd2));
-    }
+    auto rng = whack::random::HostGenerator<float>(55, 0);
+    const auto rnd1 = rng.normal();
+    rng = whack::random::HostGenerator<float>(55, 0);
+    const auto rnd2 = rng.normal();
+    CHECK(rnd1 == Catch::Approx(rnd2));
 }
 
 namespace {
@@ -102,12 +100,13 @@ Results1D run_random_number_generator_1d()
 
     const auto rnd_host = rnd.host_copy();
     thrust::host_vector<float> host_vector = rnd_host.host_vector();
-    // REQUIRE(host_vector.size() == n_batches * 16 * 1024);
+#ifndef _MSC_VER
+    REQUIRE(host_vector.size() == n_batches * 16 * 1024);
+#endif
 
     // mean
     const auto mean = thrust::reduce(host_vector.begin(), host_vector.end(), 0.0f, thrust::plus<float>()) / float(host_vector.size());
     const auto two_standard_deviations = 2.f / std::sqrt(float(host_vector.size()));
-    // CHECK(std::abs(mean) < two_standard_deviations);
 
     // var
     const auto sqr = [](float v) { return v * v; };
@@ -116,7 +115,6 @@ Results1D run_random_number_generator_1d()
                                thrust::make_transform_iterator(host_vector.end(), sqr),
                                0.f, thrust::plus<float>())
         / float(host_vector.size());
-    // CHECK(variance == Catch::Approx(1.0).scale(1).epsilon(0.01));
 
     auto rnd2 = compute_random_numbers_with_fixed_seed<Config>();
     const auto rnd_v = rnd.view();
@@ -184,13 +182,13 @@ Results2D run_random_number_generator_2d()
     std_vec.resize(host_vector.size());
     thrust::copy(host_vector.begin(), host_vector.end(), std_vec.begin());
 
-    // REQUIRE(host_vector.size() == n_batches * 16 * 1024);
+#ifndef _MSC_VER
+    REQUIRE(host_vector.size() == n_batches * 16 * 1024);
+#endif
 
     // mean
     const auto means = thrust::reduce(host_vector.begin(), host_vector.end(), glm::vec2(0.0f), thrust::plus<glm::vec2>()) / glm::vec2(host_vector.size(), host_vector.size());
     const auto two_standard_deviations = 2.f / std::sqrt(float(host_vector.size()));
-    // CHECK(std::abs(means.x) < two_standard_deviations);
-    // CHECK(std::abs(means.y) < two_standard_deviations);
 
     // var
     const auto sqr = [](glm::vec2 v) { return v * v; };
@@ -199,8 +197,6 @@ Results2D run_random_number_generator_2d()
                                thrust::make_transform_iterator(host_vector.end(), sqr),
                                glm::vec2(0, 0), thrust::plus<glm::vec2>())
         / glm::vec2(host_vector.size(), host_vector.size());
-    // CHECK(variances.x == Catch::Approx(1.0).scale(2).epsilon(0.01));
-    // CHECK(variances.y == Catch::Approx(1.0).scale(2).epsilon(0.01));
 
     // cov
     const auto cov_comp = [](glm::vec2 v) { return v.x * v.y; };
@@ -209,7 +205,6 @@ Results2D run_random_number_generator_2d()
                    thrust::make_transform_iterator(host_vector.end(), cov_comp),
                    0.f, thrust::plus<float>())
         / float(host_vector.size());
-    // CHECK(cov == Catch::Approx(0.0).scale(2).epsilon(0.01));
 
     // equality when sampling a second time
     whack::Tensor<glm::vec2, 3> rnd2 = compute_random_numbers_with_fixed_seed2<Config>();
@@ -229,11 +224,10 @@ Results2D run_random_number_generator_2d()
     return { means, variances, cov, two_standard_deviations };
 }
 
-// TEMPLATE_TEST_CASE is not compiling with nvcc on windoof
-// TEMPLATE_TEST_CASE("random_number_generator 1d", "", ConfigCudaFastGen, ConfigCudaFastOffset, ConfigCpu)
 TEST_CASE("random_number_generator 1d", "")
 {
-    Results1D results = run_random_number_generator_1d<ConfigCudaFastGen>(); // msvc + cuda can't run cuda kernels inside TEST_CASES
+    // msvc + cuda can't run cuda kernels inside TEST_CASES
+    Results1D results = run_random_number_generator_1d<ConfigCudaFastGen>();
 
     // msvc/nvcc also can't run CHECK/REQUIRE inside tempalted function
     CHECK(std::abs(results.mean) < results.two_std_dev);
