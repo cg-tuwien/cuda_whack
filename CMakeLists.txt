@@ -10,11 +10,18 @@ option(WHACK_ENABLE_ASSERTS "enable asserts (do not define NDEBUG)" OFF)
 ######################################## dependencies ###########################################
 include(FetchContent)
 if(NOT TARGET glm::glm)
-    FetchContent_Declare(glm GIT_REPOSITORY https://github.com/g-truc/glm.git)
+    FetchContent_Declare(glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        SOURCE_DIR 		${CMAKE_SOURCE_DIR}/3rdparty/glm
+    )
     FetchContent_MakeAvailable(glm)
 endif()
 if(WHACK_BUILD_UNITTESTS OR BUILD_TESTING)
-    FetchContent_Declare(catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git GIT_TAG v3.3.2)
+    FetchContent_Declare(catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.3.2
+        SOURCE_DIR 		${CMAKE_SOURCE_DIR}/3rdparty/Catch2
+    )
     FetchContent_MakeAvailable(catch2)
 endif()
 
@@ -52,15 +59,6 @@ find_package(OpenMP REQUIRED)
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()
-
-#set(MY_INCLUDE_PATHS
-    #${MY_ANACONDA_PATH}/include/python3.9/
-    #../glm
-    #../yamc/include
-    #../gcem/include
-    #../autodiff
-#)
-#include_directories(SYSTEM ${MY_INCLUDE_PATHS} SYSTEM ${TORCH_INCLUDE_DIRS})
 
 ########################################## projects ##############################################
 
