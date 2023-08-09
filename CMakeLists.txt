@@ -4,7 +4,6 @@ project(cuda_whack LANGUAGES CUDA CXX)
 option(BUILD_WHACK_UNITTESTS "include unit test targets for whack in the buildsystem" OFF)
 
 
-######################################## dependencies ###########################################
 include(FetchContent)
 if(NOT TARGET glm::glm)
     FetchContent_Declare(glm
@@ -23,8 +22,6 @@ if(BUILD_WHACK_UNITTESTS OR BUILD_TESTING)
 endif()
 
 find_package(CUDAToolkit)
-
-############################################ setup ##############################################
 find_package(OpenMP REQUIRED)
 
 add_subdirectory(src)

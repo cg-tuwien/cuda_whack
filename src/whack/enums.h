@@ -22,6 +22,6 @@ namespace whack {
 enum class Location {
     Host,
     Device,
-    Invalid
+    Invalid,
 };
 }
