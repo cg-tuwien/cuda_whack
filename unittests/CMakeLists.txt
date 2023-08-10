@@ -7,7 +7,6 @@ add_executable(whack_unittests
     indexing.cu
     kernel_starter.cu
     tensor_view.cu
-    tensor_view.cpp
     random_number_generator.cu
     rng_state.cu
     Tensor.cu
