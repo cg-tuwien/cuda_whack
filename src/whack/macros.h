@@ -38,9 +38,9 @@
 
 #if defined(NDEBUG)
 #if defined(__CUDACC__)
-#define STROKE_INLINE __forceinline__
+#define WHACK_INLINE __forceinline__
 #else
-#define STROKE_INLINE inline
+#define WHACK_INLINE inline
 #endif
 #else
 #define WHACK_INLINE
