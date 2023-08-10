@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(cuda_whack_unittests LANGUAGES CUDA CXX)
 
-add_executable(unittests
+add_executable(whack_unittests
     main.cpp
     cpu_only_kernel_starter.cpp
     indexing.cpp
@@ -13,4 +13,4 @@ add_executable(unittests
     Tensor.cu
 )
         
-target_link_libraries(unittests PUBLIC Catch2::Catch2WithMain CUDA::nvToolsExt whack)
+target_link_libraries(whack_unittests PUBLIC Catch2::Catch2WithMain CUDA::nvToolsExt whack)
