@@ -36,11 +36,11 @@
 #define WHACK_DEVICES
 #endif
 
-#if defined(NDEBUG) && defined(__CUDACC__)
-#ifdef _MSVC_LANG
-#define WHACK_INLINE __forceinline
+#if defined(NDEBUG)
+#if defined(__CUDACC__)
+#define STROKE_INLINE __forceinline__
 #else
-#define WHACK_INLINE __forceinline__
+#define STROKE_INLINE inline
 #endif
 #else
 #define WHACK_INLINE
