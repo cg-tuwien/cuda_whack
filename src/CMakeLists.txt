@@ -24,6 +24,7 @@ target_link_libraries(whack INTERFACE OpenMP::OpenMP_CXX glm::glm)
 target_compile_definitions(whack INTERFACE GLM_FORCE_XYZW_ONLY)
 target_include_directories(whack INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_compile_options(whack INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda --expt-relaxed-constexpr>)
+target_compile_features(whack INTERFACE cuda_std_17 cxx_std_17)
 
 if(MSVC)
     target_compile_options(whack INTERFACE $<$<COMPILE_LANGUAGE:CXX>:/MP>)
