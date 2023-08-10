@@ -24,6 +24,16 @@
 #include "macros.h"
 
 namespace whack {
+
+// array is now available in the cuda stl. so in theory we should be able to replace it here.
+// but unfortunately, at the time of writing, it doesn't compile yet in c++ files (https://github.com/NVIDIA/libcudacxx/issues/354)
+
+// once the bugfix is widely available, we should test for performance, as the cuda stl version uses size_t for the size, and it might be 64bits.
+// in general this shouldn't be a problem as we should be using it only in constexpr context, but better check, maybe auto takes a 64bit size somewher.
+
+// also, cudas version doesn't assert in operator[] (only in at() i think). I consider the bounds checks handy for debugging. so we might wrap cudas version
+// and only use a typedef in release mode.
+
 template <typename T, uint32_t N>
 struct Array {
     T data[N];
@@ -90,4 +100,15 @@ struct Array {
         return data + N;
     }
 };
+
+template <typename T, uint32_t N>
+bool operator==(const Array<T, N>& a, const Array<T, N>& b)
+{
+    for (uint32_t i = 0; i < N; ++i) {
+        if (a[i] != b[i])
+            return false;
+    }
+    return true;
+}
+
 } // namespace whack
