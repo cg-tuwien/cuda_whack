@@ -39,8 +39,7 @@ struct Array {
     T data[N];
     static_assert(N > 0, "an array of size 0 doesn't appear usefull and would break front and back functions.");
 
-    WHACK_DEVICES_INLINE
-    T& operator[](uint32_t i)
+    WHACK_DEVICES_INLINE T& operator[](uint32_t i)
     {
         assert(i < N);
         return data[i];
