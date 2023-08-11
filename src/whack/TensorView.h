@@ -34,7 +34,7 @@ namespace whack {
 /**
  * @brief Use TensorView for passing a tensor to kernels. Unlike a Tensor, it can be copied to the gpu using lambda capture.
  */
-template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
+template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 class TensorView {
     static_assert(std::is_integral_v<IndexStoreType>);
     static_assert(std::is_integral_v<IndexCalculateType>);
@@ -188,7 +188,7 @@ namespace detail {
     }
 } // namespace detail
 
-template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, uint32_t n_dims>
+template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, whack::size_t n_dims>
 std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<T, n_dims, IndexStoreType, IndexCalculateType>>
 make_tensor_view(Vector<T>& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
 {
@@ -201,7 +201,7 @@ make_tensor_view(Vector<T>& data, const whack::Array<IndexStoreType, n_dims>& di
     return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), dimensions };
 }
 
-template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, uint32_t n_dims>
+template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, whack::size_t n_dims>
 std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<const T, n_dims, IndexStoreType, IndexCalculateType>>
 make_tensor_view(const Vector<T>& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
 {

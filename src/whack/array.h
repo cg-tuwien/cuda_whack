@@ -21,18 +21,35 @@
 #include <cassert>
 #include <cinttypes>
 
+#define WHACK_USE_OWN_ARRAY
+
+#ifndef WHACK_USE_OWN_ARRAY
+#include <cuda/std/array>
+#endif
+
 #include "macros.h"
 
 namespace whack {
 
-// array is now available in the cuda stl. so in theory we should be able to replace it here.
-// but unfortunately, at the time of writing, it doesn't compile yet in c++ files (https://github.com/NVIDIA/libcudacxx/issues/354)
+#ifndef WHACK_USE_OWN_ARRAY
 
-// once the bugfix is widely available, we should test for performance, as the cuda stl version uses size_t for the size, and it might be 64bits.
-// in general this shouldn't be a problem as we should be using it only in constexpr context, but better check, maybe auto takes a 64bit size somewher.
+using size_t = cuda::std::size_t;
 
-// also, cudas version doesn't assert in operator[] (only in at() i think). I consider the bounds checks handy for debugging. so we might wrap cudas version
-// and only use a typedef in release mode.
+// template <typename T, size_t N>
+// using Array = cuda::std::array<T, N>;
+
+template <typename T, size_t N>
+struct Array : cuda::std::array<T, N> { };
+
+#else
+// array is now available in the cuda stl. and it's possible to replace it by undefining WHACK_USE_OWN_ARRAY
+
+// unfortunately, at the time of writing, it doesn't compile yet in c++ files (https://github.com/NVIDIA/libcudacxx/issues/354)
+// also, cudas version doesn't assert in operator[] (only in at() i think). I consider the bounds checks handy for debugging.
+
+// you might want to benchmark your code with the cuda version, in my brief tests the performance was the same.
+
+using size_t = uint32_t;
 
 template <typename T, uint32_t N>
 struct Array {
@@ -109,5 +126,6 @@ bool operator==(const Array<T, N>& a, const Array<T, N>& b)
     }
     return true;
 }
+#endif
 
 } // namespace whack

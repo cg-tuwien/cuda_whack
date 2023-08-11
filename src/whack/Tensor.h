@@ -30,10 +30,10 @@ namespace whack {
 /**
  * @brief The Tensor class is a device type erased holder of memory. Use the view() member function to get an accessor object.
  */
-template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
+template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 class Tensor {
 public:
-    static constexpr uint32_t n_dims_value = n_dims;
+    static constexpr whack::size_t n_dims_value = n_dims;
     using index_store_type = IndexStoreType;
     using index_calculate_type = IndexCalculateType;
 
@@ -148,7 +148,7 @@ public:
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
 };
 
-template <typename T, uint32_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
+template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 Tensor<T, n_dims> make_tensor(Location device, const whack::Array<IndexStoreType, n_dims>& dimensions)
 {
     static_assert(std::is_integral_v<IndexStoreType>);
@@ -209,7 +209,7 @@ Tensor<T, sizeof...(DimensionTypes)> make_device_tensor(DimensionTypes... dim)
     return make_tensor<T, IndexStoreType, IndexCalculateType>(Location::Device, dim...);
 }
 
-template <typename T, uint32_t n_dims, typename IndexStoreType, typename IndexCalculateType>
+template <typename T, whack::size_t n_dims, typename IndexStoreType, typename IndexCalculateType>
 Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexStoreType, IndexCalculateType>::device_copy() const
 {
     Tensor t = make_tensor<T>(whack::Location::Device, m_dimensions);
@@ -224,7 +224,7 @@ Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexSto
     return t;
 }
 
-template <typename T, uint32_t n_dims, typename IndexStoreType, typename IndexCalculateType>
+template <typename T, whack::size_t n_dims, typename IndexStoreType, typename IndexCalculateType>
 Tensor<T, n_dims, IndexStoreType, IndexCalculateType> Tensor<T, n_dims, IndexStoreType, IndexCalculateType>::host_copy() const
 {
     Tensor t = make_tensor<T>(whack::Location::Host, m_dimensions);

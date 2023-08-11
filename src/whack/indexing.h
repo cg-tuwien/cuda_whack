@@ -22,10 +22,8 @@
 
 namespace whack {
 
-template <typename large_type, unsigned n_dims, typename small_type = large_type>
-WHACK_DEVICES_INLINE
-    Array<small_type, n_dims>
-    split_n_dim_index(const Array<small_type, n_dims>& dimensions, large_type idx)
+template <typename large_type, whack::size_t n_dims, typename small_type = large_type>
+WHACK_DEVICES_INLINE Array<small_type, n_dims> split_n_dim_index(const Array<small_type, n_dims>& dimensions, large_type idx)
 {
     Array<small_type, n_dims> tmp;
     tmp.back() = 1;
@@ -41,7 +39,7 @@ WHACK_DEVICES_INLINE
     return tmp;
 }
 
-template <typename large_type, unsigned n_dims, typename small_type = large_type>
+template <typename large_type, whack::size_t n_dims, typename small_type = large_type>
 WHACK_DEVICES_INLINE large_type join_n_dim_index(const Array<small_type, n_dims>& dimensions, const Array<small_type, n_dims>& idx)
 {
     large_type joined_idx = 0;

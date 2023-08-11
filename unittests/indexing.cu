@@ -27,6 +27,7 @@ TEMPLATE_TEST_CASE("indexing.cpp", "", int, unsigned, int64_t, uint64_t)
     SECTION("indexing")
     {
         using whack::join_n_dim_index;
+        using whack::split_n_dim_index;
         {
             const auto dims = whack::Array<TestType, 4> { 5, 4, 3, 2 };
             REQUIRE(join_n_dim_index<TestType>(dims, { 0, 0, 0, 0 }) == 0);
