@@ -78,6 +78,15 @@ namespace detail {
     }
 } // namespace detail
 
+inline dim3 grid_dim_from_total_size(const dim3& total_size, const dim3& blockDim)
+{
+    return {
+        (total_size.x + blockDim.x - 1) / blockDim.x,
+        (total_size.y + blockDim.y - 1) / blockDim.y,
+        (total_size.z + blockDim.z - 1) / blockDim.z
+    };
+}
+
 template <typename Fun>
 void start_parallel(Location device, const dim3& gridDim, const dim3& blockDim, const Fun& function)
 {

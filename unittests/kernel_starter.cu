@@ -25,8 +25,13 @@
 
 #define WHACK_UNUSED_THREAD_INDICES WHACK_UNUSED(whack_gridDim) WHACK_UNUSED(whack_blockDim) WHACK_UNUSED(whack_blockIdx) WHACK_UNUSED(whack_threadIdx)
 
-// windows is only happy, if the enclosing function of a host device lambda has external linkage
+inline bool operator==(const dim3& a, const dim3& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
 
+// windows is only happy, if the enclosing function of a host device lambda has external linkage
+namespace {
 void kernel_starter_interface()
 {
     dim3 dimBlock = dim3(1, 1, 1);
@@ -74,6 +79,7 @@ void kernel_starter_start_on_cpu()
         CHECK(v[i] == i);
     }
 }
+} // namespace
 
 TEST_CASE("kernel_starter.cu")
 {
@@ -91,5 +97,13 @@ TEST_CASE("kernel_starter.cu")
     SECTION("start on cpu")
     {
         kernel_starter_start_on_cpu();
+    }
+
+    SECTION("compute grid dim")
+    {
+        CHECK(whack::grid_dim_from_total_size({ 1, 1, 1 }, { 1, 1, 1 }) == dim3(1, 1, 1));
+        CHECK(whack::grid_dim_from_total_size({ 1, 1, 1 }, { 16, 8, 4 }) == dim3(1, 1, 1));
+        CHECK(whack::grid_dim_from_total_size({ 16, 16, 16 }, { 16, 8, 4 }) == dim3(1, 2, 4));
+        CHECK(whack::grid_dim_from_total_size({ 17, 17, 17 }, { 16, 8, 4 }) == dim3(2, 3, 5));
     }
 }
