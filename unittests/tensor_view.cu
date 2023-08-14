@@ -22,6 +22,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <glm/glm.hpp>
 #include <nvtx3/nvToolsExt.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -32,7 +33,7 @@
 
 #define WHACK_UNUSED_THREAD_INDICES WHACK_UNUSED(whack_gridDim) WHACK_UNUSED(whack_blockDim) WHACK_UNUSED(whack_blockIdx) WHACK_UNUSED(whack_threadIdx)
 
-void tensor_view_cuda_read_write_multi_dim_cuda()
+void tensor_view_read_write_multi_dim_cuda()
 {
     const thrust::device_vector<int> tensor_1 = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
     thrust::device_vector<int> tensor_2 = std::vector { 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11 };
@@ -56,7 +57,7 @@ void tensor_view_cuda_read_write_multi_dim_cuda()
     }
 }
 
-void tensor_view_cuda_read_write_multi_dim_cpu()
+void tensor_view_read_write_multi_dim_cpu()
 {
     const thrust::host_vector<int> tensor_1 = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
     thrust::host_vector<int> tensor_2 = std::vector { 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11 };
@@ -77,6 +78,32 @@ void tensor_view_cuda_read_write_multi_dim_cpu()
     REQUIRE(host_v.size() == 12);
     for (int i = 0; i < 12; ++i) {
         CHECK(host_v[i] == i * 2);
+    }
+}
+
+void tensor_view_pointer_api()
+{
+    const thrust::device_vector<int> tensor_1 = std::vector { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+    thrust::device_vector<int> tensor_2 = std::vector { 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11 };
+
+    const whack::Array<uint32_t, 3> dimensions = { 1u, 2u, 3u };
+    const auto tensor_1_view = whack::make_tensor_view<glm::ivec2>(thrust::raw_pointer_cast(tensor_1.data()), whack::Location::Device, dimensions);
+    auto tensor_2_view = whack::make_tensor_view<glm::ivec2>(thrust::raw_pointer_cast(tensor_2.data()), whack::Location::Device, 1, 2, 3);
+
+    dim3 dimBlock = dim3(2, 3, 1);
+    dim3 dimGrid = dim3(1, 1, 1);
+    whack::start_parallel(
+        whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL(tensor_1_view, tensor_2_view) {
+            WHACK_UNUSED_THREAD_INDICES
+            const glm::ivec2& v = tensor_1_view(0u, whack_threadIdx.x, whack_threadIdx.y);
+            tensor_2_view(0u, whack_threadIdx.x, whack_threadIdx.y) = glm::ivec2(v.x + v.y, 2);
+        });
+
+    thrust::host_vector<int> host_v(tensor_2);
+    REQUIRE(host_v.size() == 12);
+    for (int i = 0; i < 6; ++i) {
+        CHECK(host_v[i * 2] == i * 4 + 1);
+        CHECK(host_v[i * 2 + 1] == 2);
     }
 }
 
@@ -150,11 +177,15 @@ TEST_CASE("tensor_view (cuda)")
 {
     SECTION("read/write multi dim cuda")
     {
-        tensor_view_cuda_read_write_multi_dim_cuda();
+        tensor_view_read_write_multi_dim_cuda();
     }
     SECTION("read/write multi dim cpu")
     {
-        tensor_view_cuda_read_write_multi_dim_cpu();
+        tensor_view_read_write_multi_dim_cpu();
+    }
+    SECTION("pointer api")
+    {
+        tensor_view_pointer_api();
     }
 }
 

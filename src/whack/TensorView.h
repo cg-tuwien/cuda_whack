@@ -150,12 +150,14 @@ public:
     template <typename... IndexTypes>
     WHACK_DEVICES_INLINE const T& operator()(const IndexStoreType& index0, const IndexTypes&... other_indices) const
     {
+        static_assert(sizeof...(other_indices) + 1 == n_dims);
         return operator()(Index { index0, IndexStoreType(other_indices)... });
     }
 
     template <typename... IndexTypes>
     WHACK_DEVICES_INLINE T& operator()(const IndexStoreType& index0, const IndexTypes&... other_indices)
     {
+        static_assert(sizeof...(other_indices) + 1 == n_dims);
         return operator()(Index { index0, IndexStoreType(other_indices)... });
     }
 };
@@ -188,6 +190,8 @@ namespace detail {
     }
 } // namespace detail
 
+// // api for thrust arrays
+// dimensions array api
 template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, whack::size_t n_dims>
 std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<T, n_dims, IndexStoreType, IndexCalculateType>>
 make_tensor_view(Vector<T>& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
@@ -229,6 +233,37 @@ make_tensor_view(const Vector<T>& data, DimensionTypes... dimensions)
 {
     assert((IndexCalculateType(dimensions) * ...) == data.size());
     return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), { IndexStoreType(dimensions)... } };
+}
+
+// // api for raw pointers
+// dimensions array api
+template <typename InterpretedType, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename T, whack::size_t n_dims>
+TensorView<InterpretedType, n_dims, IndexStoreType, IndexCalculateType>
+make_tensor_view(T* pointer, Location location, const whack::Array<IndexStoreType, n_dims>& dimensions)
+{
+    return { reinterpret_cast<InterpretedType*>(pointer), location, dimensions };
+}
+
+template <typename InterpretedType, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename T, whack::size_t n_dims>
+TensorView<const InterpretedType, n_dims, IndexStoreType, IndexCalculateType>
+make_tensor_view(const T* pointer, Location location, const whack::Array<IndexStoreType, n_dims>& dimensions)
+{
+    return { reinterpret_cast<const InterpretedType*>(pointer), location, dimensions };
+}
+
+// parameter pack api
+template <typename InterpretedType, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename T, typename... DimensionTypes>
+TensorView<InterpretedType, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType>
+make_tensor_view(T* pointer, Location location, DimensionTypes... dimensions)
+{
+    return { reinterpret_cast<InterpretedType*>(pointer), location, { IndexStoreType(dimensions)... } };
+}
+
+template <typename InterpretedType, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename T, typename... DimensionTypes>
+TensorView<const InterpretedType, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType>
+make_tensor_view(const T* pointer, Location location, DimensionTypes... dimensions)
+{
+    return { reinterpret_cast<const InterpretedType*>(pointer), location, { IndexStoreType(dimensions)... } };
 }
 
 } // namespace whack
