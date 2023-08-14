@@ -8,6 +8,16 @@ if (UNIX)
         if it's not installed, you'll get errors, that openmp or other stuff is not installed (hard to track down)" OFF)
 endif()
 
+include(FetchContent)
+if(NOT TARGET glm::glm)
+    FetchContent_Declare(glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        SOURCE_DIR 		${CMAKE_SOURCE_DIR}/3rdparty/glm
+    )
+    FetchContent_MakeAvailable(glm)
+endif()
+find_package(OpenMP REQUIRED)
+
 add_library(whack INTERFACE
     whack/kernel.h
     whack/indexing.h
