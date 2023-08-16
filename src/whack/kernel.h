@@ -45,32 +45,32 @@ namespace detail {
     }
 
     template <typename Fun>
-    void run_cuda_kernel(const dim3& gridDim, const dim3& blockDim, const Fun& function)
+    void run_cuda_kernel(const dim3& grid_dim, const dim3& block_dim, const Fun& function)
     {
-        lambda_caller_kernel<<<gridDim, blockDim>>>(function);
+        lambda_caller_kernel<<<grid_dim, block_dim>>>(function);
         gpu_assert(cudaPeekAtLastError());
         gpu_assert(cudaDeviceSynchronize());
     }
 #endif
 
     template <typename Fun>
-    void run_cpu_kernel(const dim3& gridDim, const dim3& blockDim, Fun function)
+    void run_cpu_kernel(const dim3& grid_dim, const dim3& block_dim, Fun function)
     {
-        const auto n = blockDim.x * blockDim.y * blockDim.z;
+        const auto n = block_dim.x * block_dim.y * block_dim.z;
         const auto thread_count = n; // std::min(n, 64u);
         (void)thread_count;
 
         //        gpe::detail::CpuSynchronisationPoint::setThreadCount(thread_count);
 
-        for (unsigned blockIdxZ = 0; blockIdxZ < gridDim.z; ++blockIdxZ) {
-            for (unsigned blockIdxY = 0; blockIdxY < gridDim.y; ++blockIdxY) {
-                for (unsigned blockIdxX = 0; blockIdxX < gridDim.x; ++blockIdxX) {
+        for (unsigned blockIdxZ = 0; blockIdxZ < grid_dim.z; ++blockIdxZ) {
+            for (unsigned blockIdxY = 0; blockIdxY < grid_dim.y; ++blockIdxY) {
+                for (unsigned blockIdxX = 0; blockIdxX < grid_dim.x; ++blockIdxX) {
                     const auto blockIdx = dim3 { blockIdxX, blockIdxY, blockIdxZ };
 #pragma omp parallel for num_threads(thread_count)
                     for (int i = 0; i < int(n); ++i) { // msvc only supports int index variables in OpenMP
-                        const auto threadIdx_arr = split_n_dim_index<unsigned, 3>({ blockDim.x, blockDim.y, blockDim.z }, i);
+                        const auto threadIdx_arr = split_n_dim_index<unsigned, 3>({ block_dim.x, block_dim.y, block_dim.z }, i);
                         const auto threadIdx = dim3 { threadIdx_arr[0], threadIdx_arr[1], threadIdx_arr[2] };
-                        function(gridDim, blockDim, blockIdx, threadIdx);
+                        function(grid_dim, block_dim, blockIdx, threadIdx);
                     }
                 }
             }
@@ -78,26 +78,26 @@ namespace detail {
     }
 } // namespace detail
 
-inline dim3 grid_dim_from_total_size(const dim3& total_size, const dim3& blockDim)
+inline dim3 grid_dim_from_total_size(const dim3& total_size, const dim3& block_dim)
 {
     return {
-        (total_size.x + blockDim.x - 1) / blockDim.x,
-        (total_size.y + blockDim.y - 1) / blockDim.y,
-        (total_size.z + blockDim.z - 1) / blockDim.z
+        (total_size.x + block_dim.x - 1) / block_dim.x,
+        (total_size.y + block_dim.y - 1) / block_dim.y,
+        (total_size.z + block_dim.z - 1) / block_dim.z
     };
 }
 
 template <typename Fun>
-void start_parallel(Location device, const dim3& gridDim, const dim3& blockDim, const Fun& function)
+void start_parallel(Location device, const dim3& grid_dim, const dim3& block_dim, const Fun& function)
 {
     switch (device) {
 #ifdef __CUDACC__
     case Location::Device:
-        detail::run_cuda_kernel(gridDim, blockDim, function);
+        detail::run_cuda_kernel(grid_dim, block_dim, function);
         break;
 #endif
     case Location::Host:
-        detail::run_cpu_kernel(gridDim, blockDim, function);
+        detail::run_cpu_kernel(grid_dim, block_dim, function);
         break;
     default:
         throw std::runtime_error("start_parallel: unsupported device");
