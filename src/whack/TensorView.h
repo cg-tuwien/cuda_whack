@@ -21,6 +21,7 @@
 
 #include <cinttypes>
 #include <type_traits>
+#include <utility>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -44,7 +45,8 @@ class TensorView {
     using Index = whack::Array<IndexStoreType, n_dims>;
     T* m_data = nullptr;
 #ifdef WHACK_STRIDE_BASED_CALCULATION
-    whack::Array<IndexCalculateType, n_dims> m_strides = {};
+    // strides shifted by one dim, so that we can fit the total size in. see constructor and offset() for details
+    whack::Array<IndexCalculateType, n_dims> m_cum_dims = {};
 #endif
 #if !defined(NDEBUG) || !defined(WHACK_STRIDE_BASED_CALCULATION)
     Index m_dimensions = {};
@@ -71,7 +73,7 @@ class TensorView {
 #ifdef WHACK_STRIDE_BASED_CALCULATION
         IndexCalculateType offset = index[n_dims - 1];
         for (unsigned i = 0; i < n_dims - 1; ++i) {
-            offset += index[i] * m_strides[i];
+            offset += index[i] * m_cum_dims[i + 1];
         }
         return offset;
 #else
@@ -79,7 +81,27 @@ class TensorView {
 #endif
     }
 
+    // compile time for from https://stackoverflow.com/a/47563100
+    template <std::size_t N>
+    struct num {
+        static const constexpr auto value = N;
+    };
+
+    template <class F, std::size_t... Is>
+    WHACK_DEVICES_INLINE static void for_(F func, std::index_sequence<Is...>)
+    {
+        (func(num<Is> {}), ...);
+    }
+
+    template <std::size_t N, typename F>
+    WHACK_DEVICES_INLINE static void for_(F func)
+    {
+        for_(func, std::make_index_sequence<N>());
+    }
+
 public:
+    using Shape = Index;
+
     TensorView() = default;
 
     TensorView(T* data, Location location, const Index& dimensions)
@@ -94,8 +116,8 @@ public:
 #ifdef WHACK_STRIDE_BASED_CALCULATION
         IndexCalculateType cum_dims = 1;
         for (unsigned i = n_dims - 1; i < n_dims; --i) {
-            m_strides[i] = cum_dims;
             cum_dims *= dimensions[i];
+            m_cum_dims[i] = cum_dims;
         }
 #endif
 
@@ -110,6 +132,41 @@ public:
         } else {
             throw std::logic_error("TensorView created with invalid location!");
         }
+    }
+
+    template <whack::size_t dimension>
+    WHACK_DEVICES_INLINE IndexStoreType size() const
+    {
+        static_assert(dimension < n_dims);
+#if defined(WHACK_STRIDE_BASED_CALCULATION)
+        if (dimension == n_dims - 1)
+            return m_cum_dims[n_dims - 1];
+        return m_cum_dims[dimension] / m_cum_dims[dimension + 1];
+#else
+        return m_dimensions[dimension];
+#endif
+    }
+
+    WHACK_DEVICES_INLINE IndexStoreType size(unsigned dimension) const
+    {
+        assert(dimension < n_dims);
+#if defined(WHACK_STRIDE_BASED_CALCULATION)
+        if (dimension == n_dims - 1)
+            return m_cum_dims[n_dims - 1];
+        return m_cum_dims[dimension] / m_cum_dims[dimension + 1];
+#else
+        return m_dimensions[dimension];
+#endif
+    }
+
+    WHACK_DEVICES_INLINE Shape shape() const
+    {
+        Shape s;
+        for_<n_dims>([&s, this](auto i) {
+            IndexStoreType size = this->size<whack::size_t(i.value)>();
+            s[i.value] = size;
+        });
+        return s;
     }
 
     template <typename U = T>

@@ -107,6 +107,38 @@ void tensor_view_pointer_api()
     }
 }
 
+void tensor_view_shape_and_size_on_device()
+{
+    const thrust::device_vector<int> tensor = std::vector { 0 };
+    const auto* ptr = thrust::raw_pointer_cast(tensor.data());
+    const auto v1 = whack::make_tensor_view<glm::ivec2>(ptr, whack::Location::Device, 42);
+    auto v2 = whack::make_tensor_view<glm::ivec2>(ptr, whack::Location::Device, 12, 34, 56);
+
+    dim3 dimBlock = dim3(1, 1, 1);
+    dim3 dimGrid = dim3(1, 1, 1);
+    whack::start_parallel(
+        whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL(v1, v2) {
+            WHACK_UNUSED_THREAD_INDICES
+            const auto s1 = v1.shape();
+            const auto s2 = v2.shape();
+            assert(s1.size() == 1);
+            assert(s1[0] == 42);
+            assert(v1.size<0>() == 42);
+            assert(v1.size(0) == 42);
+
+            assert(s2.size() == 3);
+            assert(s2[0] == 12);
+            assert(s2[1] == 34);
+            assert(s2[2] == 56);
+            assert(v2.size<0>() == 12);
+            assert(v2.size(0) == 12);
+            assert(v2.size<1>() == 34);
+            assert(v2.size(1) == 34);
+            assert(v2.size<2>() == 56);
+            assert(v2.size(2) == 56);
+        });
+}
+
 template <typename IndexCalculationType>
 void tensor_view_cuda_benchmark_read_write_multi_dim_cuda()
 {
@@ -396,5 +428,42 @@ TEST_CASE("tensor_view (cpp)")
         CHECK(tensor_writer_view(0, 0, 2, 0) == 14);
         CHECK(tensor_writer_view(0, 1, 0, 0) == 16);
         CHECK(tensor_writer_view(0, 1, 2, 1) == 111);
+    }
+
+    SECTION("tensor view shape")
+    {
+        {
+            const auto view = whack::make_tensor_view<glm::ivec2>((int*)(nullptr), whack::Location::Host, 1);
+            CHECK(view.size(0) == 1);
+            CHECK(view.size<0>() == 1);
+            CHECK(view.shape() == decltype(view)::Shape { 1 });
+        }
+        {
+            const auto view = whack::make_tensor_view<glm::ivec2>((int*)(nullptr), whack::Location::Host, 44);
+            CHECK(view.size(0) == 44);
+            CHECK(view.size<0>() == 44);
+            CHECK(view.shape() == decltype(view)::Shape { 44 });
+        }
+        {
+            const auto view = whack::make_tensor_view<glm::ivec2>((int*)(nullptr), whack::Location::Host, 1, 4, 8);
+            CHECK(view.size(0) == 1);
+            CHECK(view.size(1) == 4);
+            CHECK(view.size(2) == 8);
+            CHECK(view.size<0>() == 1);
+            CHECK(view.size<1>() == 4);
+            CHECK(view.size<2>() == 8);
+            CHECK(view.shape() == decltype(view)::Shape { 1, 4, 8 });
+        }
+        {
+            const auto view = whack::make_tensor_view<glm::ivec2>((int*)(nullptr), whack::Location::Host, 45, 321, 99);
+            CHECK(view.size(0) == 45);
+            CHECK(view.size(1) == 321);
+            CHECK(view.size(2) == 99);
+            CHECK(view.size<0>() == 45);
+            CHECK(view.size<1>() == 321);
+            CHECK(view.size<2>() == 99);
+            CHECK(view.shape() == decltype(view)::Shape { 45, 321, 99 });
+        }
+        tensor_view_shape_and_size_on_device();
     }
 }
