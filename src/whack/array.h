@@ -56,18 +56,16 @@ struct Array {
     T data[N];
     static_assert(N > 0, "an array of size 0 doesn't appear usefull and would break front and back functions.");
 
-    WHACK_DEVICES_INLINE T& operator[](uint32_t i)
-    {
-        assert(i < N);
+	WHACK_DEVICES_INLINE T& operator[](uint32_t i) {
+		assert(i < N);
         return data[i];
-    }
-    WHACK_DEVICES_INLINE
-    const T& operator[](uint32_t i) const
-    {
-        assert(i < N);
+	}
+	WHACK_DEVICES_INLINE
+	constexpr const T& operator[](uint32_t i) const {
+		assert(i < N);
         return data[i];
-    }
-    WHACK_DEVICES_INLINE
+	}
+	WHACK_DEVICES_INLINE
     constexpr uint32_t size() const
     {
         return N;
@@ -79,48 +77,43 @@ struct Array {
         return data[0];
     }
     WHACK_DEVICES_INLINE
-    const T& front() const
-    {
-        return data[0];
-    }
+	constexpr const T& front() const {
+		return data[0];
+	}
 
-    WHACK_DEVICES_INLINE
+	WHACK_DEVICES_INLINE
     T& back()
     {
         return data[N - 1];
     }
     WHACK_DEVICES_INLINE
-    const T& back() const
-    {
-        return data[N - 1];
-    }
+	constexpr const T& back() const {
+		return data[N - 1];
+	}
 
-    WHACK_DEVICES_INLINE
+	WHACK_DEVICES_INLINE
     T* begin()
     {
         return data;
     }
     WHACK_DEVICES_INLINE
-    const T* begin() const
-    {
-        return data;
-    }
-    WHACK_DEVICES_INLINE
+	constexpr const T* begin() const {
+		return data;
+	}
+	WHACK_DEVICES_INLINE
     T* end()
     {
         return data + N;
     }
     WHACK_DEVICES_INLINE
-    const T* end() const
-    {
-        return data + N;
-    }
+	constexpr const T* end() const {
+		return data + N;
+	}
 };
 
 template <typename T, uint32_t N>
-bool operator==(const Array<T, N>& a, const Array<T, N>& b)
-{
-    for (uint32_t i = 0; i < N; ++i) {
+constexpr bool operator==(const Array<T, N>& a, const Array<T, N>& b) {
+	for (uint32_t i = 0; i < N; ++i) {
         if (a[i] != b[i])
             return false;
     }
