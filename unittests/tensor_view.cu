@@ -290,6 +290,28 @@ TEST_CASE("tensor_view (cpp)")
         static_assert(std::is_const_v<std::remove_reference_t<decltype(tensor_view({ 0 }))>>);
     }
 
+    SECTION("copy tensor view")
+    {
+        thrust::host_vector<int> tensor_data = std::vector { 42, 43 };
+        REQUIRE(tensor_data.size() == 2);
+        REQUIRE(tensor_data[0] == 42);
+        REQUIRE(tensor_data[1] == 43);
+        const auto dimensions = whack::Array<uint32_t, 1> { 2u };
+        auto tensor_view = whack::make_tensor_view(tensor_data, dimensions);
+
+        auto tensor_view_copy = tensor_view;
+        CHECK(tensor_view_copy.size<0>() == 2);
+
+        CHECK(tensor_view_copy({ 0 }) == 42);
+        CHECK(tensor_view_copy({ 1 }) == 43);
+
+        tensor_view_copy({ 0 }) = 2;
+        tensor_view_copy({ 1 }) = 3;
+
+        CHECK(tensor_view({ 0 }) == 2);
+        CHECK(tensor_view({ 1 }) == 3);
+    }
+
     SECTION("read struct")
     {
         struct Foo {
