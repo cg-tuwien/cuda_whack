@@ -28,6 +28,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
+#include "whack/Tensor.h"
 #include "whack/TensorView.h"
 #include "whack/kernel.h"
 
@@ -310,6 +311,17 @@ TEST_CASE("tensor_view (cpp)")
 
         CHECK(tensor_view({ 0 }) == 2);
         CHECK(tensor_view({ 1 }) == 3);
+    }
+
+    SECTION("const cast")
+    {
+        auto t = whack::make_host_tensor<int>(42);
+        whack::TensorView<int, 1> tv = t.view();
+
+        whack::TensorView<const int, 1> const_tv = t.view(); // copy constructor
+        CHECK(const_tv.shape() == tv.shape());
+        CHECK(const_tv.data() == tv.data());
+        const_tv = t.view(); // assignment operator
     }
 
     SECTION("read struct")

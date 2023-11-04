@@ -102,7 +102,13 @@ class TensorView {
 public:
     using Shape = Index;
 
-    TensorView() = default;
+    WHACK_DEVICES_INLINE TensorView() = default;
+
+    WHACK_DEVICES_INLINE TensorView(const TensorView<std::remove_const_t<T>, n_dims, IndexStoreType, IndexCalculateType>& other)
+    {
+        // not using copy and swap idiom since we would have to implement a swap function using WHACK_DEVICES_INLINE
+        *this = other;
+    };
 
     TensorView(T* data, Location location, const Index& dimensions)
         : m_data(data)
@@ -227,6 +233,24 @@ public:
     {
         return m_data;
     }
+
+    WHACK_DEVICES_INLINE TensorView& operator=(const TensorView<std::remove_const_t<T>, n_dims, IndexStoreType, IndexCalculateType>& other)
+    {
+        this->m_data = other.m_data;
+#ifdef WHACK_STRIDE_BASED_CALCULATION
+        this->m_cum_dims = other.m_cum_dims;
+#endif
+
+#if !defined(NDEBUG) || !defined(WHACK_STRIDE_BASED_CALCULATION)
+        this->m_dimensions = other.m_dimensions;
+#endif
+
+#if !defined(NDEBUG)
+        this->m_location = other.m_location;
+#endif
+        return *this;
+    };
+    friend class TensorView<const T, n_dims, IndexStoreType, IndexCalculateType>;
 };
 
 // whack::Array api
