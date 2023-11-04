@@ -217,6 +217,16 @@ public:
         static_assert(sizeof...(other_indices) + 1 == n_dims);
         return operator()(Index { index0, IndexStoreType(other_indices)... });
     }
+
+    WHACK_DEVICES_INLINE T* data()
+    {
+        return m_data;
+    }
+
+    WHACK_DEVICES_INLINE const T* data() const
+    {
+        return m_data;
+    }
 };
 
 // whack::Array api
