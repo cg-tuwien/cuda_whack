@@ -25,6 +25,11 @@
 #include "TensorView.h"
 #include "enums.h"
 
+#ifndef __CUDACC__
+static_assert(false, "whack::Tensor is only supported in cuda files!");
+// because at the time of writing, thrust did not support even including its headers in cpp mode.
+#endif
+
 namespace whack {
 
 /**
