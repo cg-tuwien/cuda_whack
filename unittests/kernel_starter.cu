@@ -46,7 +46,7 @@ void kernel_starter_start_on_cuda()
     dim3 dimBlock = dim3(32, 1, 1);
     dim3 dimGrid = dim3(1, 1, 1);
     whack::start_parallel(
-        whack::Location::Device, dimGrid, dimBlock, WHACK_KERNEL(v_ptr) {
+        whack::Location::Device, dimGrid, dimBlock, WHACK_DEVICE_KERNEL(v_ptr) {
             WHACK_UNUSED_THREAD_INDICES
             if (whack_threadIdx.x >= 16)
                 return;

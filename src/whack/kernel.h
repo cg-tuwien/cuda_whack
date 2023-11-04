@@ -94,7 +94,9 @@ void start_parallel(Location device, const dim3& grid_dim, const dim3& block_dim
     switch (device) {
 #ifdef __CUDACC__
     case Location::Device:
-        static_assert(__nv_is_extended_host_device_lambda_closure_type(Fun), "function must be annotated with __host__ __device__");
+        static_assert(__nv_is_extended_host_device_lambda_closure_type(Fun)
+                || __nv_is_extended_device_lambda_closure_type(Fun),
+            "function must be annotated with __device__");
         detail::run_cuda_kernel(grid_dim, block_dim, function);
         break;
 #endif
