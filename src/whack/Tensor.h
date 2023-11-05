@@ -153,6 +153,34 @@ public:
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
 };
 
+// template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename> typename Vector>
+template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
+Tensor<T, n_dims> make_tensor(Location device, std::initializer_list<T> data, const whack::Array<IndexStoreType, n_dims>& dimensions)
+{
+    static_assert(std::is_integral_v<IndexStoreType>);
+    static_assert(std::is_integral_v<IndexCalculateType>);
+    static_assert(std::is_unsigned_v<IndexStoreType>);
+    static_assert(std::is_unsigned_v<IndexCalculateType>);
+    static_assert(std::is_move_assignable_v<thrust::host_vector<T>>, "thrust::host_vector<T> must be movable");
+
+    IndexCalculateType size = 1;
+    for (unsigned i = 0; i < n_dims; ++i)
+        size *= dimensions[i];
+    assert(data.size() == size);
+    if (data.size() != size)
+        return {};
+
+    switch (device) {
+    case Location::Host:
+        return { thrust::host_vector<T>(data.begin(), data.end()), dimensions };
+    case Location::Device:
+        return { thrust::device_vector<T>(data.begin(), data.end()), dimensions };
+    case Location::Invalid:
+        return {};
+    }
+    return {};
+}
+
 template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 Tensor<T, n_dims> make_tensor(Location device, const whack::Array<IndexStoreType, n_dims>& dimensions)
 {
@@ -180,38 +208,22 @@ Tensor<T, n_dims> make_tensor(Location device, const whack::Array<IndexStoreType
 template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
 Tensor<T, sizeof...(DimensionTypes)> make_tensor(Location device, DimensionTypes... dim)
 {
-    static_assert(std::is_integral_v<IndexStoreType>);
-    static_assert(std::is_integral_v<IndexCalculateType>);
-    static_assert(std::is_unsigned_v<IndexStoreType>);
-    static_assert(std::is_unsigned_v<IndexCalculateType>);
-    static_assert(std::is_move_assignable_v<thrust::host_vector<T>>, "thrust::host_vector<T> must be movable");
-
     using Dimensions = whack::Array<IndexStoreType, sizeof...(DimensionTypes)>;
 
-    const IndexCalculateType size = (std::make_unsigned_t<IndexCalculateType>(dim) * ...);
     const auto dimensions = Dimensions { IndexStoreType(dim)... };
-
-    switch (device) {
-    case Location::Host:
-        return { thrust::host_vector<T>(size), dimensions };
-    case Location::Device:
-        return { thrust::device_vector<T>(size), dimensions };
-    case Location::Invalid:
-        return {};
-    }
-    return {};
+    return make_tensor<T, dimensions.size(), IndexStoreType, IndexCalculateType>(device, dimensions);
 }
 
-template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
-Tensor<T, sizeof...(DimensionTypes)> make_host_tensor(DimensionTypes... dim)
+template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... ParameterTypes>
+Tensor<T, sizeof...(ParameterTypes)> make_host_tensor(ParameterTypes... params)
 {
-    return make_tensor<T, IndexStoreType, IndexCalculateType>(Location::Host, dim...);
+    return make_tensor<T, IndexStoreType, IndexCalculateType>(Location::Host, params...);
 }
 
-template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
-Tensor<T, sizeof...(DimensionTypes)> make_device_tensor(DimensionTypes... dim)
+template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... ParameterTypes>
+Tensor<T, sizeof...(ParameterTypes)> make_device_tensor(ParameterTypes... params)
 {
-    return make_tensor<T, IndexStoreType, IndexCalculateType>(Location::Device, dim...);
+    return make_tensor<T, IndexStoreType, IndexCalculateType>(Location::Device, params...);
 }
 
 template <typename T, whack::size_t n_dims, typename IndexStoreType, typename IndexCalculateType>

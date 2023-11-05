@@ -93,6 +93,14 @@ void Tensor_interface()
         });
         CHECK(tensor.device_vector()[2 * 3 * 4 - 1] == 42);
     }
+
+    {
+        const whack::Array<uint32_t, 2> dimensions = { 2, 3 };
+
+        auto tensor = whack::make_tensor<float>(whack::Location::Device, { 1, 2, 3, 4, 5, 6 }, dimensions);
+        CHECK(tensor.location() == whack::Location::Device);
+        CHECK(tensor.device_vector().size() == 2 * 3);
+    }
 }
 
 void Tensor_copy()
