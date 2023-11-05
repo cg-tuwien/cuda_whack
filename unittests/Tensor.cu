@@ -100,6 +100,31 @@ void Tensor_interface()
         auto tensor = whack::make_tensor<float>(whack::Location::Device, { 1, 2, 3, 4, 5, 6 }, dimensions);
         CHECK(tensor.location() == whack::Location::Device);
         CHECK(tensor.device_vector().size() == 2 * 3);
+        // CHECK_TRHOWS(tensor(0, 0));
+    }
+    {
+        auto tensor = whack::make_tensor<float>(whack::Location::Host, { 1, 2, 3, 4, 5, 6 }, 3, 2);
+        CHECK(tensor.location() == whack::Location::Host);
+        CHECK(tensor.host_vector().size() == 3 * 2);
+        // CHECK(tensor(0, 0) == 1);
+        // CHECK(tensor(0, 1) == 2);
+        // CHECK(tensor(1, 0) == 3);
+        // CHECK(tensor(1, 1) == 4);
+        // CHECK(tensor(2, 0) == 5);
+        // CHECK(tensor(2, 1) == 6);
+    }
+    {
+        const std::vector<float> data = { 1, 2, 3, 4, 5, 6 };
+        const whack::Array<uint32_t, 2> dimensions = { 2, 3 };
+        auto tensor = whack::make_tensor<float>(whack::Location::Host, data.begin(), data.end(), dimensions);
+        CHECK(tensor.location() == whack::Location::Host);
+        CHECK(tensor.host_vector().size() == 3 * 2);
+        //     CHECK(tensor(0, 0) == 1);
+        //     CHECK(tensor(0, 1) == 2);
+        //     CHECK(tensor(1, 0) == 3);
+        //     CHECK(tensor(1, 1) == 4);
+        //     CHECK(tensor(2, 0) == 5);
+        //     CHECK(tensor(2, 1) == 6);
     }
 }
 

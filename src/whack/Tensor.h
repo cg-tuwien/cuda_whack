@@ -153,9 +153,8 @@ public:
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
 };
 
-// template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename> typename Vector>
-template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
-Tensor<T, n_dims> make_tensor(Location device, std::initializer_list<T> data, const whack::Array<IndexStoreType, n_dims>& dimensions)
+template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename BeginIterator, typename EndIterator>
+Tensor<T, n_dims> make_tensor(Location device, BeginIterator begin, EndIterator end, const whack::Array<IndexStoreType, n_dims>& dimensions)
 {
     static_assert(std::is_integral_v<IndexStoreType>);
     static_assert(std::is_integral_v<IndexCalculateType>);
@@ -166,19 +165,34 @@ Tensor<T, n_dims> make_tensor(Location device, std::initializer_list<T> data, co
     IndexCalculateType size = 1;
     for (unsigned i = 0; i < n_dims; ++i)
         size *= dimensions[i];
-    assert(data.size() == size);
-    if (data.size() != size)
+    assert(end - begin == size);
+    if (end - begin != size)
         return {};
 
     switch (device) {
     case Location::Host:
-        return { thrust::host_vector<T>(data.begin(), data.end()), dimensions };
+        return { thrust::host_vector<T>(begin, end), dimensions };
     case Location::Device:
-        return { thrust::device_vector<T>(data.begin(), data.end()), dimensions };
+        return { thrust::device_vector<T>(begin, end), dimensions };
     case Location::Invalid:
         return {};
     }
     return {};
+}
+
+template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
+Tensor<T, n_dims> make_tensor(Location device, std::initializer_list<T> data, const whack::Array<IndexStoreType, n_dims>& dimensions)
+{
+    return make_tensor<T, n_dims, IndexStoreType, IndexCalculateType>(device, data.begin(), data.end(), dimensions);
+}
+
+template <typename T, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename... DimensionTypes>
+Tensor<T, sizeof...(DimensionTypes)> make_tensor(Location device, std::initializer_list<T> data, DimensionTypes... dim)
+{
+    using Dimensions = whack::Array<IndexStoreType, sizeof...(DimensionTypes)>;
+
+    const auto dimensions = Dimensions { IndexStoreType(dim)... };
+    return make_tensor<T, dimensions.size(), IndexStoreType, IndexCalculateType>(device, data.begin(), data.end(), dimensions);
 }
 
 template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
