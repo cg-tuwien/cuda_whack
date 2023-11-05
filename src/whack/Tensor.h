@@ -41,6 +41,7 @@ public:
     static constexpr whack::size_t n_dims_value = n_dims;
     using index_store_type = IndexStoreType;
     using index_calculate_type = IndexCalculateType;
+    using value_type = T;
 
 private:
     std::variant<thrust::host_vector<T>, thrust::device_vector<T>> m_memory;
@@ -184,13 +185,19 @@ public:
     [[nodiscard]] Location location() const { return m_device; }
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
 
+    [[nodiscard]] IndexCalculateType numel() const
+    {
+        IndexCalculateType s = 1;
+        for (unsigned i = 0; i < n_dims; ++i)
+            s *= m_dimensions[i];
+        return s;
+    }
+
 private:
     template <typename View>
     void check_sizes(const View& view) const
     {
-        IndexCalculateType orig_size = sizeof(T);
-        for (unsigned i = 0; i < n_dims; ++i)
-            orig_size *= m_dimensions[i];
+        IndexCalculateType orig_size = sizeof(T) * numel();
 
         const auto v_shape = view.shape();
         IndexCalculateType v_size = sizeof(typename View::value_type);

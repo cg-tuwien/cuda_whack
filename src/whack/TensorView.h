@@ -101,8 +101,7 @@ class TensorView {
 
 public:
     using Shape = Index;
-    using element_type = T;
-    using value_type = std::remove_cv_t<T>;
+    using value_type = T;
 
     WHACK_DEVICES_INLINE TensorView() = default;
 

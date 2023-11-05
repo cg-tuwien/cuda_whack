@@ -22,6 +22,7 @@
 
 #include "whack/Tensor.h"
 #include "whack/kernel.h"
+#include "whack/tensor_operations.h"
 
 // windows is only happy, if the enclosing function of a host device lambda has external linkage
 
@@ -202,6 +203,38 @@ void Tensor_copy_to_device_and_back()
     CHECK(h3.host_vector()[1] == 68543);
 }
 
+void Tensor_concat_and_split(whack::Location location)
+{
+    {
+        auto a = whack::make_tensor<int>(location, { 1, 2, 3, 4, 5, 6, 7, 8 }, 2, 4);
+        const auto b = whack::make_tensor<int>(location, { 1, 2, 3 }, 3, 1);
+        auto c = whack::make_tensor<int>(location, { 1, 2, 3, 4, 5 }, 5);
+
+        const auto cc = concat(a, b, c);
+        static_assert(std::is_same_v<std::remove_cv_t<decltype(cc)::value_type>, int>);
+        CHECK(cc.numel() == 2 * 4 + 3 * 1 + 5); // 16
+        const auto cc_host = cc.host_copy();
+        CHECK(cc_host(0) == 1);
+        CHECK(cc_host(1) == 2);
+        CHECK(cc_host(2) == 3);
+        CHECK(cc_host(3) == 4);
+        CHECK(cc_host(4) == 5);
+        CHECK(cc_host(5) == 6);
+        CHECK(cc_host(6) == 7);
+        CHECK(cc_host(7) == 8);
+
+        CHECK(cc_host(8) == 1);
+        CHECK(cc_host(9) == 2);
+        CHECK(cc_host(10) == 3);
+
+        CHECK(cc_host(11) == 1);
+        CHECK(cc_host(12) == 2);
+        CHECK(cc_host(13) == 3);
+        CHECK(cc_host(14) == 4);
+        CHECK(cc_host(15) == 5);
+    }
+}
+
 namespace {
 
 class FailOnCopy {
@@ -250,5 +283,11 @@ TEST_CASE("Tensor.cu")
     SECTION("copy to device and back")
     {
         Tensor_copy_to_device_and_back();
+    }
+
+    SECTION("concat and split")
+    {
+        Tensor_concat_and_split(whack::Location::Device);
+        Tensor_concat_and_split(whack::Location::Host);
     }
 }

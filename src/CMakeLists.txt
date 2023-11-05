@@ -30,6 +30,7 @@ add_library(whack INTERFACE
     whack/random/generators.h
     whack/random/state.h
     whack/pretty_printer.h
+    whack/tensor_operations.h
 )
 
 target_link_libraries(whack INTERFACE OpenMP::OpenMP_CXX glm::glm)
