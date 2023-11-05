@@ -146,6 +146,34 @@ public:
         return { raw_pointer(), location(), m_dimensions };
     }
 
+    template <typename InterpretedType = T, typename... DimensionTypes>
+    [[nodiscard]] TensorView<const InterpretedType, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType> view(DimensionTypes... dimensions) const
+    {
+        return make_tensor_view<const InterpretedType>(raw_pointer(), location(), dimensions...);
+    }
+
+    template <typename InterpretedType = T, typename... DimensionTypes>
+    [[nodiscard]] TensorView<InterpretedType, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType> view(DimensionTypes... dimensions)
+    {
+        return make_tensor_view<InterpretedType>(raw_pointer(), location(), dimensions...);
+    }
+
+    template <typename... ViewIndex>
+    [[nodiscard]] const T& operator()(const ViewIndex&... params) const
+    {
+        if (m_device != Location::Host)
+            throw std::logic_error("whack::Tensor::operator(): element access attempted on a tensor that is not on the host! ");
+        return view()(params...);
+    }
+
+    template <typename... ViewIndex>
+    [[nodiscard]] T& operator()(const ViewIndex&... params)
+    {
+        if (m_device != Location::Host)
+            throw std::logic_error("whack::Tensor::operator(): element access attempted on a tensor that is not on the host! ");
+        return view()(params...);
+    }
+
     [[nodiscard]] Tensor device_copy() const;
     [[nodiscard]] Tensor host_copy() const;
 
