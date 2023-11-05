@@ -149,13 +149,17 @@ public:
     template <typename InterpretedType = T, typename... DimensionTypes>
     [[nodiscard]] TensorView<const InterpretedType, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType> view(DimensionTypes... dimensions) const
     {
-        return make_tensor_view<const InterpretedType>(raw_pointer(), location(), dimensions...);
+        const auto v = make_tensor_view<const InterpretedType>(raw_pointer(), location(), dimensions...);
+        check_sizes(v);
+        return v;
     }
 
     template <typename InterpretedType = T, typename... DimensionTypes>
     [[nodiscard]] TensorView<InterpretedType, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType> view(DimensionTypes... dimensions)
     {
-        return make_tensor_view<InterpretedType>(raw_pointer(), location(), dimensions...);
+        const auto v = make_tensor_view<InterpretedType>(raw_pointer(), location(), dimensions...);
+        check_sizes(v);
+        return v;
     }
 
     template <typename... ViewIndex>
@@ -179,6 +183,24 @@ public:
 
     [[nodiscard]] Location location() const { return m_device; }
     [[nodiscard]] Dimensions dimensions() const { return m_dimensions; }
+
+private:
+    template <typename View>
+    void check_sizes(const View& view) const
+    {
+        IndexCalculateType orig_size = sizeof(T);
+        for (unsigned i = 0; i < n_dims; ++i)
+            orig_size *= m_dimensions[i];
+
+        const auto v_shape = view.shape();
+        IndexCalculateType v_size = sizeof(typename View::value_type);
+        for (unsigned i = 0; i < v_shape.size(); ++i)
+            v_size *= v_shape[i];
+
+        if (orig_size != v_size)
+            throw std::logic_error("whack::Tensor::view<..>(...): Tried to create a view with incompatible dimensions! Original size is "
+                + std::to_string(orig_size) + " bytes, while the view would have " + std::to_string(v_size) + " bytes.");
+    }
 };
 
 template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, typename BeginIterator, typename EndIterator>

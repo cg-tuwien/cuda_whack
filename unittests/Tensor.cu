@@ -147,6 +147,11 @@ void Tensor_interface()
         CHECK(vec_view(0, 0) == glm::vec3(1, 2, 3));
         CHECK(vec_view(0, 1) == glm::vec3(4, 5, 6));
     }
+    {
+        auto tensor = whack::make_tensor<float>(whack::Location::Host, { 1, 2, 3, 4, 5, 6 }, 3, 2);
+        CHECK_THROWS(const_cast<const decltype(tensor)*>(&tensor)->view<glm::vec3>(3, 2));
+        CHECK_THROWS(tensor.view<glm::vec3>(3, 2));
+    }
 }
 
 void Tensor_copy()
