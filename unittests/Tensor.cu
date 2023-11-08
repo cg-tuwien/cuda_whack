@@ -233,6 +233,38 @@ void Tensor_concat_and_split(whack::Location location)
         CHECK(cc_host(14) == 4);
         CHECK(cc_host(15) == 5);
     }
+
+    {
+        auto a = whack::make_tensor<int>(location, { 1, 2, 3, 4, 5, 6, 7, 8 }, 8);
+        const auto [b, c] = whack::split<int>(a, 3, 5);
+        const auto bh = b.host_copy();
+        const auto ch = c.host_copy();
+        CHECK(bh(0) == 1);
+        CHECK(bh(1) == 2);
+        CHECK(bh(2) == 3);
+        CHECK(ch(0) == 4);
+        CHECK(ch(1) == 5);
+        CHECK(ch(2) == 6);
+        CHECK(ch(3) == 7);
+        CHECK(ch(4) == 8);
+    }
+
+    {
+        auto a = whack::make_tensor<int>(location, { 1, 2, 3, 4, 5, 6, 7, 8 }, 8);
+        const auto [b, c, d, e] = whack::split<int>(a, 1, 2, 3, 2);
+        const auto bh = b.host_copy();
+        const auto ch = c.host_copy();
+        const auto dh = d.host_copy();
+        const auto eh = e.host_copy();
+        CHECK(bh(0) == 1);
+        CHECK(ch(0) == 2);
+        CHECK(ch(1) == 3);
+        CHECK(dh(0) == 4);
+        CHECK(dh(1) == 5);
+        CHECK(dh(2) == 6);
+        CHECK(eh(0) == 7);
+        CHECK(eh(1) == 8);
+    }
 }
 
 namespace {
