@@ -113,7 +113,8 @@ void write(std::ostream& os, whack::TensorView<T, 1, IndexStoreType, IndexCalcul
 template <typename T, whack::size_t n_dims, typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType>
 std::ostream& operator<<(std::ostream& os, const whack::Tensor<T, n_dims, IndexStoreType, IndexCalculateType>& data)
 {
-    os << "Tensor<" << whack::detail::type_name<T>() << ", " << n_dims << "> = ";
+    const std::string location = data.location() == whack::Location::Device ? "device" : (data.location() == whack::Location::Host ? "host" : "invalid");
+    os << location << " Tensor<" << whack::detail::type_name<T>() << ", " << n_dims << "> = ";
     if (n_dims > 1)
         os << std::endl;
     os << "{";
