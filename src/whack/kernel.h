@@ -27,6 +27,11 @@
 #define WHACK_KERNEL(...) [__VA_ARGS__] __host__ __device__(const dim3& whack_gridDim, const dim3& whack_blockDim, const dim3& whack_blockIdx, const dim3& whack_threadIdx) mutable
 #define WHACK_DEVICE_KERNEL(...) [__VA_ARGS__] __device__(const dim3& whack_gridDim, const dim3& whack_blockDim, const dim3& whack_blockIdx, const dim3& whack_threadIdx) mutable
 #define WHACK_UNUSED(x) (void)(x);
+#define WHACK_UNUSED_KERNEL_PARAMS \
+    WHACK_UNUSED(whack_gridDim);   \
+    WHACK_UNUSED(whack_blockDim);  \
+    WHACK_UNUSED(whack_blockIdx);  \
+    WHACK_UNUSED(whack_threadIdx);
 
 namespace whack {
 namespace detail {
