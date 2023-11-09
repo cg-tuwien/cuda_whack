@@ -193,6 +193,11 @@ public:
         return s;
     }
 
+    [[nodiscard]] constexpr IndexCalculateType n_dimensions() const
+    {
+        return n_dims;
+    }
+
 private:
     template <typename View>
     void check_sizes(const View& view) const
