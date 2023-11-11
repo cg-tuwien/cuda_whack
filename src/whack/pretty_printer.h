@@ -79,7 +79,7 @@ constexpr std::string_view type_name()
 template <typename T, typename IndexStoreType, typename IndexCalculateType>
 void write(std::ostream& os, whack::TensorView<T, 2, IndexStoreType, IndexCalculateType> view)
 {
-    if (view.size(0) == 0 || view.size(1) == 1)
+    if (view.size(0) == 0 || view.size(1) == 0)
         return;
 
     const auto print_row = [&os, &view](unsigned row) {
