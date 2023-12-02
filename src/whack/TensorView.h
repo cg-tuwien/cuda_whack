@@ -103,7 +103,7 @@ public:
     using Shape = Index;
     using value_type = T;
 
-    WHACK_DEVICES_INLINE TensorView() = default;
+    TensorView() = default;
 
     WHACK_DEVICES_INLINE TensorView(const TensorView<std::remove_const_t<T>, n_dims, IndexStoreType, IndexCalculateType>& other)
     {
