@@ -1,16 +1,16 @@
 /****************************************************************************
  *  Copyright (C) 2023 Adam Celarek (github.com/adam-ce, github.com/cg-tuwien)
- * 
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights to
  *  use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
  *  of the Software, and to permit persons to whom the Software is furnished to do so,
  *  subject to the following conditions:
- * 
+ *
  *  The above copyright notice and this permission notice shall be included in
  *  all copies or substantial portions of the Software.
- * 
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,7 +26,7 @@
 
 #include "whack/kernel.h"
 
-TEST_CASE("cpu_only_kernel_starter.cpp")
+void cpu_only_kernel_starter()
 {
     thrust::host_vector<int> v(16);
     int* v_ptr = thrust::raw_pointer_cast(v.data());
@@ -42,4 +42,9 @@ TEST_CASE("cpu_only_kernel_starter.cpp")
     for (int i = 0; i < 16; ++i) {
         CHECK(v[i] == i);
     }
+}
+
+TEST_CASE("cpu_only_kernel_starter.cpp")
+{
+    cpu_only_kernel_starter();
 }
