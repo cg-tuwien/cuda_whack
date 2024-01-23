@@ -14,6 +14,7 @@ if(NOT TARGET glm::glm)
     FetchContent_Declare(glm
         GIT_REPOSITORY https://github.com/g-truc/glm.git
         SOURCE_DIR 		${CMAKE_SOURCE_DIR}/3rdparty/glm
+        GIT_TAG         673a963a0f1eb82f5fcef00b7b873371555e5814
     )
     FetchContent_MakeAvailable(glm)
 endif()
