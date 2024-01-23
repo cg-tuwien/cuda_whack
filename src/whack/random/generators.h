@@ -104,6 +104,12 @@ public:
         std::uniform_real_distribution<scalar_t> uniform_distribution(0.0, 1.0);
         return uniform_distribution(m_engine);
     }
+
+    glm::vec<3, scalar_t> uniform3()
+    {
+        std::uniform_real_distribution<scalar_t> uniform_distribution(0.0, 1.0);
+        return {uniform_distribution(m_engine), uniform_distribution(m_engine), uniform_distribution(m_engine)};
+    }
 };
 
 // note: using large sequence numbers is very expensive with the fast generation type
