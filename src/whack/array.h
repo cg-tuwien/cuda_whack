@@ -70,7 +70,7 @@ struct Array {
         return data[i];
 	}
 	WHACK_DEVICES_INLINE
-    constexpr uint32_t size() const
+    static constexpr uint32_t size()
     {
         return N;
     }
