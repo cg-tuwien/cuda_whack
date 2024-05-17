@@ -25,7 +25,7 @@
 
 namespace whack {
 namespace detail {
-    whack::Location location_of(const torch::Tensor& t)
+    inline whack::Location location_of(const torch::Tensor& t)
     {
         if (t.device().is_cuda() && t.device().index() == 0)
             return whack::Location::Device;
@@ -77,6 +77,12 @@ TensorView<const T, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateTyp
 make_tensor_view(const torch::Tensor& data, DimensionTypes... dimensions)
 {
     return make_tensor_view<T>(data, whack::Array<IndexStoreType, sizeof...(DimensionTypes)> { IndexStoreType(dimensions)... });
+}
+
+template <typename T>
+T* raw_pointer(const torch::Tensor& tensor)
+{
+    return reinterpret_cast<T*>(tensor.data_ptr());
 }
 
 } // namespace whack
