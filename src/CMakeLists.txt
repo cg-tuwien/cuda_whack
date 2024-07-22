@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.25)
 project(cuda_whack_lib LANGUAGES CUDA CXX)
 
 option(BUILD_WITH_ENABLED_ASSERTS "enable asserts (do not define NDEBUG)" OFF)
@@ -15,6 +15,7 @@ if(NOT TARGET glm::glm)
         GIT_REPOSITORY https://github.com/g-truc/glm.git
         SOURCE_DIR 		${CMAKE_SOURCE_DIR}/3rdparty/glm
         GIT_TAG         673a963a0f1eb82f5fcef00b7b873371555e5814
+        SYSTEM
     )
     FetchContent_MakeAvailable(glm)
 endif()
