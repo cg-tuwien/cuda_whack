@@ -23,16 +23,13 @@
 #pragma once
 #define WHACK_STRIDE_BASED_CALCULATION
 
-#include <cinttypes>
-#include <type_traits>
-#include <utility>
-
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include "enums.h"
 #include "indexing.h"
 #include "macros.h"
+#include <cinttypes>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
 
 namespace whack {
 
@@ -270,66 +267,7 @@ namespace detail {
 
     template <template <typename...> class T, template <typename...> class U>
     inline constexpr bool is_same_template_v = is_same_template<T, U>::value;
-
-    template <template <typename...> class Vector, typename T>
-    std::enable_if_t<detail::is_same_template_v<Vector, thrust::host_vector>, Location>
-    location_of(const Vector<T>&)
-    {
-        return Location::Host;
-    }
-
-    template <template <typename...> class Vector, typename T>
-    std::enable_if_t<detail::is_same_template_v<Vector, thrust::device_vector>, Location>
-    location_of(const Vector<T>&)
-    {
-        return Location::Device;
-    }
 } // namespace detail
-
-// // api for thrust arrays
-// dimensions array api
-template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, whack::size_t n_dims>
-std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<T, n_dims, IndexStoreType, IndexCalculateType>>
-make_tensor_view(Vector<T>& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
-{
-#ifndef NDEBUG
-    IndexCalculateType dimension_size = 1;
-    for (unsigned i = 0; i < n_dims; ++i)
-        dimension_size *= dimensions[i];
-    assert(dimension_size == data.size());
-#endif
-    return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), dimensions };
-}
-
-template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, whack::size_t n_dims>
-std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<const T, n_dims, IndexStoreType, IndexCalculateType>>
-make_tensor_view(const Vector<T>& data, const whack::Array<IndexStoreType, n_dims>& dimensions)
-{
-#ifndef NDEBUG
-    IndexCalculateType dimension_size = 1;
-    for (unsigned i = 0; i < n_dims; ++i)
-        dimension_size *= dimensions[i];
-    assert(dimension_size == data.size());
-#endif
-    return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), dimensions };
-}
-
-// parameter pack api
-template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, typename... DimensionTypes>
-std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<T, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType>>
-make_tensor_view(Vector<T>& data, DimensionTypes... dimensions)
-{
-    assert((std::make_unsigned_t<IndexCalculateType>(dimensions) * ...) == data.size());
-    return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), { IndexStoreType(dimensions)... } };
-}
-
-template <typename IndexStoreType = uint32_t, typename IndexCalculateType = IndexStoreType, template <typename...> class Vector, typename T, typename... DimensionTypes>
-std::enable_if_t<detail::is_same_template_v<thrust::host_vector, Vector> || detail::is_same_template_v<Vector, thrust::device_vector>, TensorView<const T, sizeof...(DimensionTypes), IndexStoreType, IndexCalculateType>>
-make_tensor_view(const Vector<T>& data, DimensionTypes... dimensions)
-{
-    assert((IndexCalculateType(dimensions) * ...) == data.size());
-    return { thrust::raw_pointer_cast(data.data()), detail::location_of(data), { IndexStoreType(dimensions)... } };
-}
 
 // // api for raw pointers
 // dimensions array api
