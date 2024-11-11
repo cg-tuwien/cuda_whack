@@ -130,11 +130,13 @@ public:
 #endif
 
         cudaPointerAttributes attr;
-        cudaPointerGetAttributes(&attr, (void*)data);
+        const auto result = cudaPointerGetAttributes(&attr, (void*)data);
         if (location == Location::Device) {
             if (attr.type != cudaMemoryTypeDevice && attr.type != cudaMemoryTypeManaged)
                 throw std::logic_error("TensorView created with Location::Device, but data points to something on the host!");
         } else if (location == Location::Host) {
+            if (result == cudaErrorInsufficientDriver)
+                return; // happens when running without cuda capable gpu (with cpu only code).
             if (attr.type != cudaMemoryTypeHost && attr.type != cudaMemoryTypeManaged && attr.type != cudaMemoryTypeUnregistered)
                 throw std::logic_error("TensorView created with Location::Host, but data points to something on the device!");
         } else {
