@@ -30,7 +30,7 @@
 
 namespace whack::random {
 
-template <typename scalar_t, typename engine>
+template <typename Scalar, typename engine>
 class DeviceGenerator {
     engine m_state;
 
@@ -45,31 +45,31 @@ public:
         curand_init(seed, sequence_nr, 0, &m_state);
     }
 
-    __device__ scalar_t normal()
+    __device__ Scalar normal()
     {
         return curand_normal(&m_state);
     }
 
-    __device__ glm::vec<2, scalar_t> normal2()
+    __device__ glm::vec<2, Scalar> normal2()
     {
         const auto r = curand_normal2(&m_state); // no specialisation for double, but not necessary atm.
-        return glm::vec<2, scalar_t>(r.x, r.y);
+        return glm::vec<2, Scalar>(r.x, r.y);
     }
 
-    __device__ glm::vec<3, scalar_t> normal3()
+    __device__ glm::vec<3, Scalar> normal3()
     {
         const auto r = curand_normal2(&m_state); // no specialisation for double, but not necessary atm.
         const auto rz = curand_normal(&m_state);
-        return glm::vec<3, scalar_t>(r.x, r.y, rz);
+        return glm::vec<3, Scalar>(r.x, r.y, rz);
     }
 
-    __device__ scalar_t uniform()
+    __device__ Scalar uniform()
     {
         return curand_uniform(&m_state);
     }
 };
 
-template <typename scalar_t, typename Unused = void>
+template <typename Scalar, typename Unused = void>
 class HostGenerator {
     std::mt19937_64 m_engine;
 
@@ -81,33 +81,39 @@ public:
         // should be enough to just add one, but let's just shuffle a bit more for good measure.
     }
 
-    scalar_t normal()
+    Scalar normal()
     {
-        std::normal_distribution<scalar_t> normal_distribution;
+        std::normal_distribution<Scalar> normal_distribution;
         return normal_distribution(m_engine);
     }
 
-    glm::vec<2, scalar_t> normal2()
+    glm::vec<2, Scalar> normal2()
     {
-        std::normal_distribution<scalar_t> normal_distribution;
-        return glm::vec<2, scalar_t>(normal_distribution(m_engine), normal_distribution(m_engine));
+        std::normal_distribution<Scalar> normal_distribution;
+        return glm::vec<2, Scalar>(normal_distribution(m_engine), normal_distribution(m_engine));
     }
 
-    glm::vec<3, scalar_t> normal3()
+    glm::vec<3, Scalar> normal3()
     {
-        std::normal_distribution<scalar_t> normal_distribution;
-        return glm::vec<3, scalar_t>(normal_distribution(m_engine), normal_distribution(m_engine), normal_distribution(m_engine));
+        std::normal_distribution<Scalar> normal_distribution;
+        return glm::vec<3, Scalar>(normal_distribution(m_engine), normal_distribution(m_engine), normal_distribution(m_engine));
     }
 
-    scalar_t uniform()
+    Scalar uniform()
     {
-        std::uniform_real_distribution<scalar_t> uniform_distribution(0.0, 1.0);
+        std::uniform_real_distribution<Scalar> uniform_distribution(0.0, 1.0);
         return uniform_distribution(m_engine);
     }
 
-    glm::vec<3, scalar_t> uniform3()
+    glm::vec<2, Scalar> uniform2()
     {
-        std::uniform_real_distribution<scalar_t> uniform_distribution(0.0, 1.0);
+        std::uniform_real_distribution<Scalar> uniform_distribution(0.0, 1.0);
+        return { uniform_distribution(m_engine), uniform_distribution(m_engine) };
+    }
+
+    glm::vec<3, Scalar> uniform3()
+    {
+        std::uniform_real_distribution<Scalar> uniform_distribution(0.0, 1.0);
         return {uniform_distribution(m_engine), uniform_distribution(m_engine), uniform_distribution(m_engine)};
     }
 };
@@ -141,8 +147,8 @@ using KernelGeneratorWithFastInit = HostGenerator<float>;
 #endif
 
 // compiler errors if moved into the RandomNumberGenerator class
-template <typename scalar_t, int n_dims, typename Rng>
-WHACK_DEVICES_INLINE glm::vec<n_dims, scalar_t> random_normal_vec(Rng* rng)
+template <typename Scalar, int n_dims, typename Rng>
+WHACK_DEVICES_INLINE glm::vec<n_dims, Scalar> random_normal_vec(Rng* rng)
 {
     if constexpr (n_dims == 2)
         return rng->normal2();
