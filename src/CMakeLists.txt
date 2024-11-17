@@ -44,7 +44,7 @@ target_compile_options(whack INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:--expt-extende
 if (BUILD_WITH_CUDA_LINE_INFO)
     target_compile_options(whack INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:-lineinfo>)
 endif()
-target_compile_features(whack INTERFACE cuda_std_17 cxx_std_17)
+target_compile_features(whack INTERFACE cuda_std_20 cxx_std_20)
 
 if(MSVC)
     target_compile_options(whack INTERFACE $<$<COMPILE_LANGUAGE:CXX>:/MP>)

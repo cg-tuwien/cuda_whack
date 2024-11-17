@@ -44,9 +44,9 @@ using type_name_prober = void;
 template <typename T>
 constexpr std::string_view wrapped_type_name()
 {
-#if __cplusplus >= 202002L
-    return std::source_location::current().function_name();
-#else
+// #if __cplusplus >= 202002L
+//     return std::source_location::current().function_name();
+// #else
 #if defined(__clang__) || defined(__GNUC__)
     return __PRETTY_FUNCTION__;
 #elif defined(_MSC_VER)
@@ -54,7 +54,7 @@ constexpr std::string_view wrapped_type_name()
 #else
 #error "Unsupported compiler"
 #endif
-#endif // __cplusplus >= 202002L
+    // #endif // __cplusplus >= 202002L
 }
 
 constexpr std::size_t wrapped_type_name_prefix_length()
