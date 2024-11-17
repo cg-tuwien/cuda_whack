@@ -129,6 +129,10 @@ public:
         }
 #endif
 
+        for (const auto s : shape()) {
+            if (s == 0)
+                return; // torch might not allocate the tensor on the gpu if the size is 0 (empty tensor). don't test the pointer in that case.
+        }
         cudaPointerAttributes attr;
         const auto result = cudaPointerGetAttributes(&attr, (void*)data);
         if (location == Location::Device) {
