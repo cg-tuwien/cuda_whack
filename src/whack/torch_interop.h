@@ -59,6 +59,13 @@ make_tensor_view(const torch::Tensor& data, const whack::Array<IndexStoreType, n
     IndexCalculateType dimension_size = 1;
     for (unsigned i = 0; i < n_dims; ++i)
         dimension_size *= dimensions[i];
+    if (dimension_size * sizeof(T) != torch::numel(data) * data.element_size()) {
+        for (unsigned i = 0; i < n_dims; ++i) {
+            std::cout << "dimensions[" << i << "] = " << dimensions[i] << std::endl;
+        }
+        std::cout << "dimension_size = " << dimension_size << ", sizeof(T)=" << sizeof(T)
+                  << ", torch::numel(data)=" << torch::numel(data) << ", data.element_size()=" << data.element_size() << std::endl;
+    }
     assert(dimension_size * sizeof(T) == torch::numel(data) * data.element_size());
 #endif
     return { reinterpret_cast<const T*>(data.data_ptr()), detail::location_of(data), dimensions };
