@@ -9,16 +9,7 @@ if (UNIX)
         if it's not installed, you'll get errors, that openmp or other stuff is not installed (hard to track down)" OFF)
 endif()
 
-include(FetchContent)
-if(NOT TARGET glm::glm)
-    FetchContent_Declare(glm
-        GIT_REPOSITORY https://github.com/g-truc/glm.git
-        SOURCE_DIR 		${CMAKE_SOURCE_DIR}/3rdparty/glm
-        GIT_TAG         673a963a0f1eb82f5fcef00b7b873371555e5814
-        SYSTEM
-    )
-    FetchContent_MakeAvailable(glm)
-endif()
+alp_add_git_repository(glm URL https://github.com/g-truc/glm.git COMMITISH 673a963a0f1eb82f5fcef00b7b873371555e5814)
 find_package(OpenMP REQUIRED)
 
 add_library(whack INTERFACE
