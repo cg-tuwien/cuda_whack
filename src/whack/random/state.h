@@ -44,20 +44,20 @@ class StateTensorView : TensorView<UnderlyingRngStateDummy, n_dims, IndexStoreTy
     using Index = whack::Array<IndexStoreType, n_dims>;
 
 public:
-    StateTensorView() = default;
+    StateTensorView() noexcept = default;
 
     StateTensorView(UnderlyingRngStateDummy* data, Location location, const Index& dimensions)
         : TensorView<UnderlyingRngStateDummy, n_dims, IndexStoreType, IndexCalculateType>(data, location, dimensions)
     {
     }
     template <typename U = RngType, typename... IndexTypes>
-    WHACK_DEVICES_INLINE typename std::enable_if_t<std::is_same_v<U, FastInitType>, KernelGeneratorWithFastInit&> operator()(const IndexTypes&... indices)
+    WHACK_DEVICES_INLINE typename std::enable_if_t<std::is_same_v<U, FastInitType>, KernelGeneratorWithFastInit&> operator()(const IndexTypes&... indices) noexcept
     {
         return reinterpret_cast<TensorView<KernelGeneratorWithFastInit, n_dims, IndexStoreType, IndexCalculateType>*>(this)->operator()(indices...);
     }
 
     template <typename U = RngType, typename... IndexTypes>
-    WHACK_DEVICES_INLINE typename std::enable_if_t<std::is_same_v<U, FastGenerationType>, KernelGeneratorWithFastGeneration&> operator()(const IndexTypes&... indices)
+    WHACK_DEVICES_INLINE typename std::enable_if_t<std::is_same_v<U, FastGenerationType>, KernelGeneratorWithFastGeneration&> operator()(const IndexTypes&... indices) noexcept
     {
         return reinterpret_cast<TensorView<KernelGeneratorWithFastGeneration, n_dims, IndexStoreType, IndexCalculateType>*>(this)->operator()(indices...);
     }

@@ -36,34 +36,34 @@ class DeviceGenerator {
 
 public:
     __device__
-    DeviceGenerator()
+    DeviceGenerator() noexcept
         = default;
 
     __device__
-    DeviceGenerator(uint64_t seed, uint64_t sequence_nr)
+    DeviceGenerator(uint64_t seed, uint64_t sequence_nr) noexcept
     {
         curand_init(seed, sequence_nr, 0, &m_state);
     }
 
-    __device__ Scalar normal()
+    __device__ Scalar normal() noexcept
     {
         return curand_normal(&m_state);
     }
 
-    __device__ glm::vec<2, Scalar> normal2()
+    __device__ glm::vec<2, Scalar> normal2() noexcept
     {
         const auto r = curand_normal2(&m_state); // no specialisation for double, but not necessary atm.
         return glm::vec<2, Scalar>(r.x, r.y);
     }
 
-    __device__ glm::vec<3, Scalar> normal3()
+    __device__ glm::vec<3, Scalar> normal3() noexcept
     {
         const auto r = curand_normal2(&m_state); // no specialisation for double, but not necessary atm.
         const auto rz = curand_normal(&m_state);
         return glm::vec<3, Scalar>(r.x, r.y, rz);
     }
 
-    __device__ Scalar uniform()
+    __device__ Scalar uniform() noexcept
     {
         return curand_uniform(&m_state);
     }
@@ -127,11 +127,13 @@ using FastInitDeviceGenerator = DeviceGenerator<float, curandStatePhilox4_32_10_
 // warning using nvcc
 #ifdef __CUDA_ARCH__
 // device code trajectory
+#define DEPENDENT_WHACK_NOEXCEPT noexcept
 using KernelGenerator = FastGenerationDeviceGenerator;
 // note: using large sequence numbers is very expensive with the fast generation type
 using KernelGeneratorWithFastGeneration = FastGenerationDeviceGenerator;
 using KernelGeneratorWithFastInit = FastInitDeviceGenerator;
 #else
+#define DEPENDENT_WHACK_NOEXCEPT
 // nvcc host code trajectory
 using KernelGenerator = HostGenerator<float>;
 // note: using large sequence numbers is very expensive with the fast generation type
@@ -139,6 +141,7 @@ using KernelGeneratorWithFastGeneration = HostGenerator<float>;
 using KernelGeneratorWithFastInit = HostGenerator<float>;
 #endif
 #else
+#define DEPENDENT_WHACK_NOEXCEPT
 // non-nvcc code trajectory
 using KernelGenerator = HostGenerator<float>;
 // note: using large sequence numbers is very expensive with the fast generation type
@@ -148,7 +151,7 @@ using KernelGeneratorWithFastInit = HostGenerator<float>;
 
 // compiler errors if moved into the RandomNumberGenerator class
 template <typename Scalar, int n_dims, typename Rng>
-WHACK_DEVICES_INLINE glm::vec<n_dims, Scalar> random_normal_vec(Rng* rng)
+WHACK_DEVICES_INLINE glm::vec<n_dims, Scalar> random_normal_vec(Rng* rng) DEPENDENT_WHACK_NOEXCEPT
 {
     if constexpr (n_dims == 2)
         return rng->normal2();
@@ -156,3 +159,5 @@ WHACK_DEVICES_INLINE glm::vec<n_dims, Scalar> random_normal_vec(Rng* rng)
         return rng->normal3();
 }
 } // namespace whack::random
+
+#undef DEPENDENT_WHACK_NOEXCEPT

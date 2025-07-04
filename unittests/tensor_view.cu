@@ -35,6 +35,7 @@
 #include "whack/Tensor.h"
 #include "whack/TensorView.h"
 #include "whack/kernel.h"
+#include "whack/thrust_interop.h"
 
 #define WHACK_UNUSED_THREAD_INDICES WHACK_UNUSED(whack_gridDim) WHACK_UNUSED(whack_blockDim) WHACK_UNUSED(whack_blockIdx) WHACK_UNUSED(whack_threadIdx)
 

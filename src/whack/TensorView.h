@@ -57,7 +57,7 @@ class TensorView {
     Location m_location = Location::Invalid;
 #endif
 
-    WHACK_DEVICES_INLINE void assert_access_location() const
+    WHACK_DEVICES_INLINE void assert_access_location() const noexcept
     {
 #if defined(__CUDACC__) && defined(__CUDA_ARCH__)
         // device code trajectory
@@ -69,7 +69,7 @@ class TensorView {
 #endif
     }
 
-    WHACK_DEVICES_INLINE IndexCalculateType offset(const Index& index) const
+    WHACK_DEVICES_INLINE IndexCalculateType offset(const Index& index) const noexcept
     {
 #ifdef WHACK_STRIDE_BASED_CALCULATION
         IndexCalculateType offset = index[n_dims - 1];
@@ -89,13 +89,13 @@ class TensorView {
     };
 
     template <class F, std::size_t... Is>
-    WHACK_DEVICES_INLINE static void for_(F func, std::index_sequence<Is...>)
+    WHACK_DEVICES_INLINE static void for_(F func, std::index_sequence<Is...>) noexcept
     {
         (func(num<Is> {}), ...);
     }
 
     template <std::size_t N, typename F>
-    WHACK_DEVICES_INLINE static void for_(F func)
+    WHACK_DEVICES_INLINE static void for_(F func) noexcept
     {
         for_(func, std::make_index_sequence<N>());
     }
@@ -106,7 +106,7 @@ public:
 
     TensorView() = default;
 
-    WHACK_DEVICES_INLINE TensorView(const TensorView<std::remove_const_t<T>, n_dims, IndexStoreType, IndexCalculateType>& other)
+    WHACK_DEVICES_INLINE TensorView(const TensorView<std::remove_const_t<T>, n_dims, IndexStoreType, IndexCalculateType>& other) noexcept
     {
         // not using copy and swap idiom since we would have to implement a swap function using WHACK_DEVICES_INLINE
         *this = other;
@@ -149,7 +149,7 @@ public:
     }
 
     template <whack::size_t dimension>
-    WHACK_DEVICES_INLINE IndexStoreType size() const
+    WHACK_DEVICES_INLINE IndexStoreType size() const noexcept
     {
         static_assert(dimension < n_dims);
 #if defined(WHACK_STRIDE_BASED_CALCULATION)
@@ -161,7 +161,7 @@ public:
 #endif
     }
 
-    WHACK_DEVICES_INLINE IndexStoreType size(unsigned dimension) const
+    WHACK_DEVICES_INLINE IndexStoreType size(unsigned dimension) const noexcept
     {
         assert(dimension < n_dims);
 #if defined(WHACK_STRIDE_BASED_CALCULATION)
@@ -173,7 +173,7 @@ public:
 #endif
     }
 
-    WHACK_DEVICES_INLINE Shape shape() const
+    WHACK_DEVICES_INLINE Shape shape() const noexcept
     {
         Shape s;
         for_<n_dims>([&s, this](auto i) {
@@ -184,7 +184,7 @@ public:
     }
 
     template <typename U = T>
-    WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), const U&>::type operator()(const Index& index) const
+    WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), const U&>::type operator()(const Index& index) const noexcept
     {
         assert_access_location();
         for (unsigned i = 0; i < n_dims; ++i)
@@ -194,7 +194,7 @@ public:
     }
 
     template <typename U = T>
-    WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), U&>::type operator()(const Index& index)
+    WHACK_DEVICES_INLINE typename std::enable_if<(n_dims > 1), U&>::type operator()(const Index& index) noexcept
     {
         assert_access_location();
         for (unsigned i = 0; i < n_dims; ++i)
@@ -203,7 +203,7 @@ public:
     }
 
     WHACK_DEVICES_INLINE
-    const T& operator()(const IndexStoreType& index) const
+    const T& operator()(const IndexStoreType& index) const noexcept
     {
         assert_access_location();
         assert(index < m_dimensions[0]);
@@ -211,7 +211,7 @@ public:
     }
 
     WHACK_DEVICES_INLINE
-    T& operator()(const IndexStoreType& index)
+    T& operator()(const IndexStoreType& index) noexcept
     {
         assert_access_location();
         assert(index < m_dimensions[0]);
@@ -219,30 +219,30 @@ public:
     }
 
     template <typename... IndexTypes>
-    WHACK_DEVICES_INLINE const T& operator()(const IndexStoreType& index0, const IndexTypes&... other_indices) const
+    WHACK_DEVICES_INLINE const T& operator()(const IndexStoreType& index0, const IndexTypes&... other_indices) const noexcept
     {
         static_assert(sizeof...(other_indices) + 1 == n_dims);
         return operator()(Index { index0, IndexStoreType(other_indices)... });
     }
 
     template <typename... IndexTypes>
-    WHACK_DEVICES_INLINE T& operator()(const IndexStoreType& index0, const IndexTypes&... other_indices)
+    WHACK_DEVICES_INLINE T& operator()(const IndexStoreType& index0, const IndexTypes&... other_indices) noexcept
     {
         static_assert(sizeof...(other_indices) + 1 == n_dims);
         return operator()(Index { index0, IndexStoreType(other_indices)... });
     }
 
-    WHACK_DEVICES_INLINE T* data()
+    WHACK_DEVICES_INLINE T* data() noexcept
     {
         return m_data;
     }
 
-    WHACK_DEVICES_INLINE const T* data() const
+    WHACK_DEVICES_INLINE const T* data() const noexcept
     {
         return m_data;
     }
 
-    WHACK_DEVICES_INLINE TensorView& operator=(const TensorView<std::remove_const_t<T>, n_dims, IndexStoreType, IndexCalculateType>& other)
+    WHACK_DEVICES_INLINE TensorView& operator=(const TensorView<std::remove_const_t<T>, n_dims, IndexStoreType, IndexCalculateType>& other) noexcept
     {
         this->m_data = other.m_data;
 #ifdef WHACK_STRIDE_BASED_CALCULATION

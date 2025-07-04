@@ -24,6 +24,7 @@
 
 #include <cassert>
 #include <cinttypes>
+#include <cuda/std/utility>
 
 #define WHACK_USE_OWN_ARRAY
 
@@ -59,70 +60,93 @@ template <typename T, uint32_t N>
 struct Array {
     T data[N];
     static_assert(N > 0, "an array of size 0 doesn't appear usefull and would break front and back functions.");
+    static_assert(std::is_nothrow_default_constructible_v<T>);
+    static_assert(std::is_nothrow_copy_constructible_v<T>);
 
-    WHACK_DEVICES_INLINE T& operator[](uint32_t i)
+    constexpr Array() noexcept
+    {
+        for (int i = 0; i < N; ++i) {
+            data[i] = {};
+        }
+    }
+
+    template <typename... Args,
+        typename = std::enable_if_t<sizeof...(Args) == N && (std::is_nothrow_constructible_v<T, Args> && ...)>>
+    constexpr Array(Args&&... args) noexcept
+        : data { cuda::std::forward<Args>(args)... }
+    {
+    }
+
+    explicit constexpr Array(const T& fill_value) noexcept
+    {
+        for (int i = 0; i < N; ++i) {
+            data[i] = fill_value;
+        }
+    }
+
+    WHACK_DEVICES_INLINE T& operator[](uint32_t i) noexcept
     {
         assert(i < N);
         return data[i];
     }
     WHACK_DEVICES_INLINE
-    constexpr const T& operator[](uint32_t i) const
+    constexpr const T& operator[](uint32_t i) const noexcept
     {
         assert(i < N);
         return data[i];
     }
     WHACK_DEVICES_INLINE
-    static constexpr uint32_t size()
+    static constexpr uint32_t size() noexcept
     {
         return N;
     }
 
     WHACK_DEVICES_INLINE
-    T& front()
+    T& front() noexcept
     {
         return data[0];
     }
     WHACK_DEVICES_INLINE
-    constexpr const T& front() const
+    constexpr const T& front() const noexcept
     {
         return data[0];
     }
 
     WHACK_DEVICES_INLINE
-    T& back()
+    T& back() noexcept
     {
         return data[N - 1];
     }
     WHACK_DEVICES_INLINE
-    constexpr const T& back() const
+    constexpr const T& back() const noexcept
     {
         return data[N - 1];
     }
 
     WHACK_DEVICES_INLINE
-    T* begin()
+    T* begin() noexcept
     {
         return data;
     }
     WHACK_DEVICES_INLINE
-    constexpr const T* begin() const
+    constexpr const T* begin() const noexcept
     {
         return data;
     }
     WHACK_DEVICES_INLINE
-    T* end()
+    T* end() noexcept
     {
         return data + N;
     }
     WHACK_DEVICES_INLINE
-    constexpr const T* end() const
+    constexpr const T* end() const noexcept
     {
         return data + N;
     }
 };
 
 template <typename T, uint32_t N>
-constexpr bool operator==(const Array<T, N>& a, const Array<T, N>& b)
+constexpr bool operator==(const Array<T, N>& a, const Array<T, N>& b) noexcept
 {
     for (uint32_t i = 0; i < N; ++i) {
         if (a[i] != b[i])
