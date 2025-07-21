@@ -14,6 +14,7 @@ find_package(OpenMP REQUIRED)
 
 add_library(whack INTERFACE
     whack/kernel.h
+    whack/nvtx.h
     whack/indexing.h
     whack/array.h
     whack/macros.h
