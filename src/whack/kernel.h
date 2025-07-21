@@ -47,19 +47,20 @@ namespace detail {
         function(gridDim, blockDim, blockIdx, threadIdx);
     }
 
-    inline void gpu_assert(cudaError_t code)
+    inline bool is_good(cudaError_t code)
     {
         if (code != cudaSuccess) {
             throw std::runtime_error("CUDA error: " + std::string(cudaGetErrorString(code)));
         }
+        return true;
     }
 
     template <typename Fun>
     void run_cuda_kernel(const dim3& grid_dim, const dim3& block_dim, const Fun& function)
     {
         lambda_caller_kernel<<<grid_dim, block_dim>>>(function);
-        gpu_assert(cudaPeekAtLastError());
-        gpu_assert(cudaDeviceSynchronize());
+        assert(is_good(cudaPeekAtLastError()));
+        assert(is_good(cudaDeviceSynchronize()));
     }
 #endif
 
