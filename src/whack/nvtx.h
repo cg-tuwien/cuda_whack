@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <cuda_runtime.h>
 #include <nvtx3/nvToolsExt.h>
 #include <string>
 
@@ -36,6 +37,9 @@ public:
     }
     ~RangeGuard()
     {
+#ifdef WHACK_NVTX_DEVICE_SYNC
+        cudaDeviceSynchronize();
+#endif
         nvtxRangePop();
     }
 };
